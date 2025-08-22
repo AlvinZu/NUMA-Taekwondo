@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUMA Taekwondo - Gestión Escolar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    
+    <style>
+        .belt-white { background-color: #ffffff; color: #000000; }
+        .belt-yellow { background-color: #ffff00; color: #000000; }
+        .belt-green { background-color: #008000; color: #ffffff; }
+        .belt-blue { background-color: #0000ff; color: #ffffff; }
+        .belt-red { background-color: #ff0000; color: #ffffff; }
+        .belt-black { background-color: #000000; color: #ffffff; }
+        
+        .sidebar {
+            transition: all 0.3s;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+        
+        .qr-scanner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .qr-scanner-container {
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        
+        #qr-video {
+            width: 100%;
+            border-radius: 8px;
+        }
+        
+        .belt-indicator {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Navegación -->
+    <nav class="bg-red-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button id="sidebar-toggle" class="md:hidden text-white hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold">NUMA Taekwondo</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="user-profile" class="hidden">
+                    <div class="flex items-center space-x-2">
+                        <img id="user-avatar" src="https://via.placeholder.com/40" alt="User" class="rounded-full">
+                        <span id="user-name">Usuario</span>
+                    </div>
+                </div>
+                <button id="logout-btn" class="bg-red-700 hover:bg-red-800 px-4 py-2 rounded hidden">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+                <button id="login-btn" class="bg-white text-red-600 hover:bg-gray-200 px-4 py-2 rounded font-medium hidden">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="flex">
+        <!-- Sidebar - Barra Lateral de Menú -->
+        <aside class="sidebar bg-white w-64 min-h-screen shadow-md fixed md:relative z-20">
+            <div class="p-4">
+                <div id="admin-nav" class="hidden">
+                    <h3 class="font-bold text-lg mb-4 text-gray-700">Administración</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="dashboard-link block px-4 py-2 rounded hover:bg-red-100 text-red-600"><i class="fas fa-tachometer-alt mr-2"></i> Dashboard</a></li>
+                        <li><a href="#" class="students-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-users mr-2"></i> Alumnos</a></li>
+                        <li><a href="#" class="classes-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-calendar-alt mr-2"></i> Clases</a></li>
+                        <li><a href="#" class="payments-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-money-bill-wave mr-2"></i> Pagos</a></li>
+                        <li><a href="#" class="reports-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-chart-bar mr-2"></i> Reportes</a></li>
+                    </ul>
+                </div>
+                
+                <div id="instructor-nav" class="hidden">
+                    <h3 class="font-bold text-lg mb-4 text-gray-700">Instructor</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="instructor-dashboard-link block px-4 py-2 rounded hover:bg-red-100 text-red-600"><i class="fas fa-tachometer-alt mr-2"></i> Hoy</a></li>
+                        <li><a href="#" class="attendance-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-clipboard-check mr-2"></i> Asistencia</a></li>
+                        <li><a href="#" class="progress-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-chart-line mr-2"></i> Progreso Alumnos</a></li>
+                    </ul>
+                </div>
+                
+                <div id="student-nav" class="hidden">
+                    <h3 class="font-bold text-lg mb-4 text-gray-700">Alumno</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="profile-link block px-4 py-2 rounded hover:bg-red-100 text-red-600"><i class="fas fa-user mr-2"></i> Mi Perfil</a></li>
+                        <li><a href="#" class="my-progress-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-chart-line mr-2"></i> Mi Progreso</a></li>
+                        <li><a href="#" class="schedule-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-calendar mr-2"></i> Horarios</a></li>
+                        <li><a href="#" class="qr-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-qrcode mr-2"></i> Mi QR</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-6 ml-0 md:ml-64">
+            <!-- Login/Signup Form -->
+            <div id="auth-container" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-center mb-6 text-red-600">NUMA Taekwondo</h2>
+                <div class="flex justify-center mb-6">
+                    <img src="https://via.placeholder.com/150" alt="NUMA Logo" class="h-24">
+                </div>
+                
+                <div id="login-form">
+                    <div class="mb-4">
+                        <label for="email" class="block text-gray-700 mb-2">Correo Electrónico</label>
+                        <input type="email" id="email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <div class="mb-6">
+                        <label for="password" class="block text-gray-700 mb-2">Contraseña</label>
+                        <input type="password" id="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <button id="login-submit" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition mb-4">
+                        Iniciar Sesión
+                    </button>
+                    <button id="google-login" class="w-full bg-white text-gray-700 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition mb-4">
+                        <i class="fab fa-google mr-2 text-red-500"></i> Continuar con Google
+                    </button>
+                    <p class="text-center text-gray-600">¿No tienes cuenta? <button id="show-signup" class="text-red-600 hover:underline">Regístrate</button></p>
+                </div>
+                
+              <!-- Formulario de Registro -->
+                <div id="signup-form" class="hidden">
+                    <div class="mb-4">
+                        <label for="signup-name" class="block text-gray-700 mb-2">Nombre Completo</label>
+                        <input type="text" id="signup-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="signup-email" class="block text-gray-700 mb-2">Correo Electrónico</label>
+                        <input type="email" id="signup-email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="signup-password" class="block text-gray-700 mb-2">Contraseña</label>
+                        <input type="password" id="signup-password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="signup-role" class="block text-gray-700 mb-2">Rol</label>
+                        <select id="signup-role" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option value="student">Alumno/Padre</option>
+                            <option value="instructor">Instructor</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <button id="signup-submit" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition mb-4">
+                        Registrarse
+                    </button>
+                    <p class="text-center text-gray-600">¿Ya tienes cuenta? <button id="show-login" class="text-red-600 hover:underline">Inicia Sesión</button></p>
+                </div>
+            </div>
+            
+            <!-- Admin Dashboard - Panel de administración -->
+            <div id="admin-dashboard" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">Panel de Administración</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+                                <i class="fas fa-users text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Alumnos</p>
+                                <p class="text-2xl font-bold" id="total-students">120</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                                <i class="fas fa-calendar-check text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Asistencias Hoy</p>
+                                <p class="text-2xl font-bold" id="today-attendance">45</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                                <i class="fas fa-money-bill-wave text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Ingresos Mensuales</p>
+                                <p class="text-2xl font-bold">$<span id="monthly-income">12,500</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
+                                <i class="fas fa-star text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Próximos Exámenes</p>
+                                <p class="text-2xl font-bold" id="next-exams">8</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Distribución de Cintas</h3>
+                        <canvas id="beltDistributionChart" height="200"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Asistencia por Clase (Últimos 7 días)</h3>
+                        <canvas id="attendanceChart" height="200"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow mb-8">
+                    <h3 class="text-lg font-semibold mb-4">Alumnos para Promoción</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cinta Actual</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asistencias</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">Juan Pérez</td>
+                                    <td class="px-6 py-4 whitespace-nowrap"><span class="belt-indicator belt-yellow"></span> Amarilla</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">24/20</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <button class="promote-btn bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">Promover</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">María Gómez</td>
+                                    <td class="px-6 py-4 whitespace-nowrap"><span class="belt-indicator belt-white"></span> Blanca</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">22/20</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <button class="promote-btn bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">Promover</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Admin Students Management - Admini Gestión de Estudiantes  -->
+            <div id="admin-students" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Gestión de Alumnos</h2>
+                    <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Nuevo Alumno
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                    <div class="p-4 border-b">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                            <div class="mb-4 md:mb-0 md:w-1/2">
+                                <div class="relative">
+                                    <input type="text" placeholder="Buscar alumno..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <div class="absolute left-3 top-2.5 text-gray-400">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <select class="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <option>Todas las cintas</option>
+                                    <option>Blanca</option>
+                                    <option>Amarilla</option>
+                                    <option>Verde</option>
+                                    <option>Azul</option>
+                                    <option>Roja</option>
+                                    <option>Negra</option>
+                                </select>
+                                <button class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg">
+                                    <i class="fas fa-filter"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cinta</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edad</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Asistencia</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <img class="h-10 w-10 rounded-full" src="https://via.placeholder.com/40" alt="">
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">Juan Pérez</div>
+                                                <div class="text-sm text-gray-500">ID: ST001</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="belt-indicator belt-yellow"></span> Amarilla
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">10 años</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">mama@email.com</div>
+                                        <div class="text-sm text-gray-500">555-1234</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">Ayer</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-red-600 hover:text-red-900 mr-3">Editar</button>
+                                        <button class="text-blue-600 hover:text-blue-900">Promover</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <img class="h-10 w-10 rounded-full" src="https://via.placeholder.com/40" alt="">
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">María Gómez</div>
+                                                <div class="text-sm text-gray-500">ID: ST002</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="belt-indicator belt-white"></span> Blanca
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">8 años</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">papa@email.com</div>
+                                        <div class="text-sm text-gray-500">555-5678</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">Hace 3 días</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-red-600 hover:text-red-900 mr-3">Editar</button>
+                                        <button class="text-blue-600 hover:text-blue-900">Promover</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"> Anterior </a>
+                            <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"> Siguiente </a>
+                        </div>
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700">
+                                    Mostrando
+                                    <span class="font-medium">1</span>
+                                    a
+                                    <span class="font-medium">10</span>
+                                    de
+                                    <span class="font-medium">120</span>
+                                    resultados
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                    <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        <span class="sr-only">Anterior</span>
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                    <a href="#" aria-current="page" class="z-10 bg-red-50 border-red-500 text-red-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium"> 1 </a>
+                                    <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium"> 2 </a>
+                                    <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium"> 3 </a>
+                                    <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        <span class="sr-only">Siguiente</span>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructor Dashboard - Panel del instructor -->
+            <div id="instructor-dashboard" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">Clases de Hoy</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold">Infantiles - 5:00 PM</h3>
+                                <p class="text-gray-600">Lunes y Miércoles</p>
+                            </div>
+                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Hoy</span>
+                        </div>
+                        <div class="mb-4">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600">Alumnos inscritos:</span>
+                                <span class="font-medium">15</span>
+                            </div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600">Promedio asistencia:</span>
+                                <span class="font-medium">12</span>
+                            </div>
+                        </div>
+                        <button class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
+                            <i class="fas fa-clipboard-check mr-2"></i> Tomar Asistencia
+                        </button>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold">Adultos - 7:00 PM</h3>
+                                <p class="text-gray-600">Martes y Jueves</p>
+                            </div>
+                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Hoy</span>
+                        </div>
+                        <div class="mb-4">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600">Alumnos inscritos:</span>
+                                <span class="font-medium">20</span>
+                            </div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600">Promedio asistencia:</span>
+                                <span class="font-medium">15</span>
+                            </div>
+                        </div>
+                        <button class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
+                            <i class="fas fa-clipboard-check mr-2"></i> Tomar Asistencia
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow mb-8">
+                    <h3 class="text-lg font-semibold mb-4">Próximas Clases</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Día</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grupo</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alumnos</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">Miércoles</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">5:00 PM</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Infantiles</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">15</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">Jueves</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">7:00 PM</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Adultos</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">20</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">Sábado</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">9:00 AM</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Avanzados</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">12</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructor Attendance - Asistencia por el instructor -->
+            <div id="instructor-attendance" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Toma de Asistencia</h2>
+                    <div class="flex items-center space-x-2">
+                        <select id="class-select" class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option>Selecciona una clase</option>
+                            <option>Infantiles - Lunes y Miércoles 5:00 PM</option>
+                            <option>Adultos - Martes y Jueves 7:00 PM</option>
+                            <option>Avanzados - Sábado 9:00 AM</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                    <div class="p-4 border-b flex justify-between items-center">
+                        <div>
+                            <h3 class="font-semibold">Infantiles - Lunes y Miércoles 5:00 PM</h3>
+                            <p class="text-sm text-gray-600">15 alumnos inscritos</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="manual-attendance-btn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                                <i class="fas fa-clipboard-list mr-2"></i> Manual
+                            </button>
+                            <button id="qr-attendance-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                <i class="fas fa-qrcode mr-2"></i> Escanear QR
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="manual-attendance-list" class="hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cinta</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asistencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10">
+                                                    <img class="h-10 w-10 rounded-full" src="https://via.placeholder.com/40" alt="">
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900">Juan Pérez</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="belt-indicator belt-yellow"></span> Amarilla
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <input type="checkbox" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10">
+                                                    <img class="h-10 w-10 rounded-full" src="https://via.placeholder.com/40" alt="">
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900">María Gómez</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="belt-indicator belt-white"></span> Blanca
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <input type="checkbox" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="p-4 border-t flex justify-end">
+                            <button class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+                                <i class="fas fa-save mr-2"></i> Guardar Asistencia
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="qr-scanner-overlay" class="qr-scanner-overlay hidden">
+                    <div class="qr-scanner-container">
+                        <video id="qr-video" playsinline></video>
+                        <div class="mt-4 text-center text-white">
+                            <p>Escanea el código QR del alumno para registrar su asistencia</p>
+                        </div>
+                        <button id="close-scanner" class="mt-4 bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
+                            <i class="fas fa-times mr-2"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="qr-confirmation" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+                        <h3 class="text-lg font-semibold mb-4">Confirmar Asistencia</h3>
+                        <p id="qr-student-name" class="mb-4">¿Marcar asistencia para <span class="font-semibold">Juan Pérez</span>?</p>
+                        <div class="flex justify-end space-x-3">
+                            <button id="cancel-confirmation" class="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">Cancelar</button>
+                            <button id="confirm-attendance" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Confirmar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Student Profile - Perfil del estudiante -->
+            <div id="student-profile" class="hidden">
+                <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
+                    <div class="p-6 flex flex-col md:flex-row items-start md:items-center">
+                        <div class="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
+                            <img class="h-24 w-24 rounded-full" src="https://via.placeholder.com/150" alt="Student photo">
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-2xl font-bold text-gray-800">Juan Pérez</h2>
+                            <div class="mt-2 flex items-center">
+                                <div class="belt-indicator belt-yellow"></div>
+                                <span class="text-lg font-medium ml-2">Cinta Amarilla</span>
+                            </div>
+                            <div class="mt-2 text-gray-600">
+                                <p><i class="fas fa-birthday-cake mr-2"></i> 10 años</p>
+                                <p><i class="fas fa-user-tie mr-2"></i> Tutor: Mamá - 555-1234</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 md:mt-0">
+                            <button id="show-qr-btn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 flex items-center">
+                                <i class="fas fa-qrcode mr-2"></i> Mi QR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Progreso hacia el próximo examen</h3>
+                        <div class="mb-2 flex justify-between">
+                            <span>Asistencias requeridas: 20</span>
+                            <span class="font-medium">15/20</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4">
+                            <div class="bg-green-600 h-4 rounded-full" style="width: 75%"></div>
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-sm text-gray-600">Faltan 5 asistencias para ser elegible para el examen de cinta verde.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Próximo pago</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+                                <i class="fas fa-money-bill-wave text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Vence el 15 de Julio</p>
+                                <p class="text-xl font-bold">$500 MXN</p>
+                            </div>
+                        </div>
+                        <button class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition mt-4">
+                            <i class="fas fa-credit-card mr-2"></i> Pagar Ahora
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow mb-8">
+                    <h3 class="text-lg font-semibold mb-4">Últimas asistencias</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clase</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">Lunes, 3 Jul</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Infantiles 5:00 PM</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Sabonim Rodríguez</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">Miércoles, 28 Jun</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Infantiles 5:00 PM</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Sabonim Rodríguez</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">Lunes, 26 Jun</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Infantiles 5:00 PM</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Sabonim García</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Student QR Code - Código QR del estudiante -->
+            <div id="student-qr" class="hidden">
+                <div class="bg-white rounded-lg shadow overflow-hidden max-w-md mx-auto p-6 text-center">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Mi Código QR</h2>
+                    <p class="text-gray-600 mb-6">Muestra este código al instructor para registrar tu asistencia</p>
+                    
+                    <div class="flex justify-center mb-6">
+                        <div class="border-4 border-red-600 p-4 rounded-lg inline-block">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=NUMA-STUDENT-001" alt="Student QR Code" class="w-48 h-48">
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-500 mb-4">Juan Pérez - Cinta Amarilla</p>
+                    
+                    <button id="download-qr" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 inline-flex items-center">
+                        <i class="fas fa-download mr-2"></i> Descargar QR
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+      
+        // DOM Elements
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userProfile = document.getElementById('user-profile');
+        const authContainer = document.getElementById('auth-container');
+        const showSignup = document.getElementById('show-signup');
+        const showLogin = document.getElementById('show-login');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        
+        // Secciones basadas en roles
+        const adminDashboard = document.getElementById('admin-dashboard');
+        const adminStudents = document.getElementById('admin-students');
+        const instructorDashboard = document.getElementById('instructor-dashboard');
+        const instructorAttendance = document.getElementById('instructor-attendance');
+        const studentProfile = document.getElementById('student-profile');
+        const studentQr = document.getElementById('student-qr');
+        
+        // Enlaces de navegación
+        const adminNav = document.getElementById('admin-nav');
+        const instructorNav = document.getElementById('instructor-nav');
+        const studentNav = document.getElementById('student-nav');
+        
+        // Elementos del escáner QR
+        const qrAttendanceBtn = document.getElementById('qr-attendance-btn');
+        const manualAttendanceBtn = document.getElementById('manual-attendance-btn');
+        const manualAttendanceList = document.getElementById('manual-attendance-list');
+        const qrScannerOverlay = document.getElementById('qr-scanner-overlay');
+        const closeScanner = document.getElementById('close-scanner');
+        const qrConfirmation = document.getElementById('qr-confirmation');
+        const qrStudentName = document.getElementById('qr-student-name');
+        const cancelConfirmation = document.getElementById('cancel-confirmation');
+        const confirmAttendance = document.getElementById('confirm-attendance');
+        
+        // Elementos del perfil del estudiante
+        const showQrBtn = document.getElementById('show-qr-btn');
+        const downloadQr = document.getElementById('download-qr');
+        
+        // Simular datos de usuario
+        let currentUser = null;
+        
+        // Activar o desactivar la barra lateral en el móvil
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+        
+        // Mostrar formulario de registro
+        showSignup.addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            signupForm.classList.remove('hidden');
+        });
+        
+        // Mostrar formulario de inicio de sesión
+        showLogin.addEventListener('click', () => {
+            signupForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        });
+        
+        // Haga clic en el botón Iniciar sesión
+        loginBtn.addEventListener('click', () => {
+            authContainer.classList.remove('hidden');
+            loginBtn.classList.add('hidden');
+        });
+        
+        // Haga clic en el botón Cerrar sesión
+        logoutBtn.addEventListener('click', () => {
+            logout();
+        });
+        
+        // Función de inicio de sesión simulado
+        function login(role) {
+            currentUser = { role: role, name: 'Usuario', email: 'demo@email.com' };
+            
+            authContainer.classList.add('hidden');
+            logoutBtn.classList.remove('hidden');
+            userProfile.classList.remove('hidden');
+            document.getElementById('sidebar-toggle').classList.remove('hidden');
+            
+            // Mostrar la navegación apropiada según el rol
+            adminNav.classList.add('hidden');
+            instructorNav.classList.add('hidden');
+            studentNav.classList.add('hidden');
+            
+            // Ocultar todas las secciones de contenido
+            adminDashboard.classList.add('hidden');
+            adminStudents.classList.add('hidden');
+            instructorDashboard.classList.add('hidden');
+            instructorAttendance.classList.add('hidden');
+            studentProfile.classList.add('hidden');
+            studentQr.classList.add('hidden');
+            
+            if (role === 'admin') {
+                adminNav.classList.remove('hidden');
+                adminDashboard.classList.remove('hidden');
+            } else if (role === 'instructor') {
+                instructorNav.classList.remove('hidden');
+                instructorDashboard.classList.remove('hidden');
+            } else if (role === 'student') {
+                studentNav.classList.remove('hidden');
+                studentProfile.classList.remove('hidden');
+            }
+            
+            // Actualizar perfil de usuario
+            document.getElementById('user-name').textContent = currentUser.name;
+        }
+        
+        // Función de cierre de sesión simulado
+        function logout() {
+            currentUser = null;
+            authContainer.classList.remove('hidden');
+            logoutBtn.classList.add('hidden');
+            userProfile.classList.add('hidden');
+            document.getElementById('sidebar-toggle').classList.add('hidden');
+            
+            // Ocultar toda la navegación y el contenido
+            adminNav.classList.add('hidden');
+            instructorNav.classList.add('hidden');
+            studentNav.classList.add('hidden');
+            
+            adminDashboard.classList.add('hidden');
+            adminStudents.classList.add('hidden');
+            instructorDashboard.classList.add('hidden');
+            instructorAttendance.classList.add('hidden');
+            studentProfile.classList.add('hidden');
+            studentQr.classList.add('hidden');
+            
+            // Restablecer el formulario de inicio de sesión
+            signupForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        }
+        
+        // Envío del formulario de inicio de sesión
+        document.getElementById('login-submit').addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Validación sencilla
+            if (email && password) {
+                // Detección simulada de roles basada en correo electrónico
+                let role = 'student';
+                if (email.includes('admin')) role = 'admin';
+                else if (email.includes('instructor')) role = 'instructor';
+                
+                login(role);
+            } else {
+                alert('Por favor ingresa correo y contraseña');
+            }
+        });
+        
+        // Envío del formulario de registro
+        document.getElementById('signup-submit').addEventListener('click', () => {
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const role = document.getElementById('signup-role').value;
+            
+            if (name && email && password) {
+                login(role);
+            } else {
+                alert('Por favor completa todos los campos');
+            }
+        });
+        
+        // Google login
+        document.getElementById('google-login').addEventListener('click', () => {
+            // Mock login as student for demo
+            login('student');
+        });
+        
+        // Enlaces de navegación para administrador
+        document.querySelector('.dashboard-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            adminDashboard.classList.remove('hidden');
+            adminStudents.classList.add('hidden');
+        });
+        
+        document.querySelector('.students-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            adminDashboard.classList.add('hidden');
+            adminStudents.classList.remove('hidden');
+        });
+        
+        // Enlaces de navegación para instructor
+        document.querySelector('.instructor-dashboard-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            instructorDashboard.classList.remove('hidden');
+            instructorAttendance.classList.add('hidden');
+        });
+        
+        document.querySelector('.attendance-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            instructorDashboard.classList.add('hidden');
+            instructorAttendance.classList.remove('hidden');
+            manualAttendanceList.classList.add('hidden');
+        });
+        
+        // Enlaces de navegación para estudiantes.
+        document.querySelector('.profile-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            studentProfile.classList.remove('hidden');
+            studentQr.classList.add('hidden');
+        });
+        
+        document.querySelector('.qr-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            studentProfile.classList.add('hidden');
+            studentQr.classList.remove('hidden');
+        });
+        
+        // Funcionalidad de asistencia QR
+        qrAttendanceBtn.addEventListener('click', () => {
+            manualAttendanceList.classList.add('hidden');
+            qrScannerOverlay.classList.remove('hidden');
+            
+            // En una aplicación real, inicializaríamos el escáner QR aquí
+            // Para la demostración, simularemos el escaneo después de 2 segundos.
+            setTimeout(() => {
+                qrScannerOverlay.classList.add('hidden');
+                qrStudentName.innerHTML = '¿Marcar asistencia para <span class="font-semibold">Juan Pérez</span>?';
+                qrConfirmation.classList.remove('hidden');
+            }, 2000);
+        });
+        
+        manualAttendanceBtn.addEventListener('click', () => {
+            manualAttendanceList.classList.remove('hidden');
+        });
+        
+        closeScanner.addEventListener('click', () => {
+            qrScannerOverlay.classList.add('hidden');
+        });
+        
+        cancelConfirmation.addEventListener('click', () => {
+            qrConfirmation.classList.add('hidden');
+        });
+        
+        confirmAttendance.addEventListener('click', () => {
+            qrConfirmation.classList.add('hidden');
+            alert('Asistencia registrada para Juan Pérez');
+        });
+        
+        // Código QR del estudiante
+        showQrBtn.addEventListener('click', () => {
+            studentProfile.classList.add('hidden');
+            studentQr.classList.remove('hidden');
+        });
+        
+        downloadQr.addEventListener('click', () => {
+            alert('QR descargado (simulado)');
+        });
+        
+        // Initialize charts - Inicializar gráficos
+        function initCharts() {
+            // Belt distribution chart
+            const beltCtx = document.getElementById('beltDistributionChart').getContext('2d');
+            const beltChart = new Chart(beltCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Blanca', 'Amarilla', 'Verde', 'Azul', 'Roja', 'Negra'],
+                    datasets: [{
+                        data: [35, 28, 22, 15, 12, 8],
+                        backgroundColor: [
+                            '#ffffff',
+                            '#ffff00',
+                            '#008000',
+                            '#0000ff',
+                            '#ff0000',
+                            '#000000'
+                        ],
+                        borderColor: '#f3f4f6',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+            
+            // tabla de asistencia
+            const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+            const attendanceChart = new Chart(attendanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Infantiles', 'Adultos', 'Avanzados', 'Competencia', 'Niños', 'Principiantes'],
+                    datasets: [{
+                        label: 'Asistencias',
+                        data: [65, 59, 80, 81, 56, 55],
+                        backgroundColor: '#ef4444',
+                        borderColor: '#dc2626',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+      
+        
+ //-------- Inicializar la aplicación addEventListeners ---------------------
+            document.addEventListener('DOMContentLoaded', () => {
+            initCharts();            
+                    
+// Para fines de demostración, iniciaremos sesión automáticamente como administrador.
+// login('admin');
+// Para probar otros roles, descomente uno de estos:
+// login('instructor');
+// login('student');
+        });
+    </script>
+  
+  
+  
+</body>
+</html>

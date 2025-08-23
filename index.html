@@ -81,8 +81,9 @@
                     </div>
                 </div>
                 <p id="login-error" class="text-red-500 text-sm mt-2 hidden">Correo o contraseña incorrectos.</p>
-                <div class="mt-6">
+                <div class="mt-6 space-y-3">
                     <button type="submit" class="w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition">Acceder</button>
+                    <button type="button" id="back-to-welcome-btn" class="w-full bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition">Atrás</button>
                 </div>
             </form>
         </div>
@@ -590,6 +591,7 @@
             const loginForm = document.getElementById('login-form');
             const loginError = document.getElementById('login-error');
             const logoutBtn = document.getElementById('logout-btn');
+            const backToWelcomeBtn = document.getElementById('back-to-welcome-btn');
             
             const mainHeader = document.getElementById('main-header');
             const scannerMainView = document.getElementById('scanner-main-view');
@@ -617,6 +619,11 @@
                 welcomeScreen.classList.add('hidden');
                 loginScreen.style.display = 'flex';
             });
+            
+            backToWelcomeBtn.addEventListener('click', () => {
+                loginScreen.style.display = 'none';
+                welcomeScreen.classList.remove('hidden');
+            });
 
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -640,6 +647,8 @@
                 authContainer.style.display = 'block';
                 welcomeScreen.classList.remove('hidden');
                 loginScreen.style.display = 'none';
+                loginForm.reset();
+                loginError.classList.add('hidden');
             });
 
             profileBtn.addEventListener('click', function(event) {

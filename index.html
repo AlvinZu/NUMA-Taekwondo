@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
     <link rel="apple-touch-icon" sizes="152x152" href="icon-152x152.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icon-180x180.png">
@@ -142,32 +143,32 @@
                     </div>
                      <p class="text-gray-500 mt-4">Apunte la cámara al código QR del alumno</p>
                 </div>
-
-                 <div id="access-granted-view" class="hidden w-full text-center p-6 fade-in">
-                    <div class="w-24 h-24 bg-green-100 rounded-full mx-auto flex items-center justify-center mb-5">
-                        <i class="fas fa-check text-5xl text-green-500"></i>
-                    </div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Acceso Concedido</h1>
-                    <p class="text-lg text-gray-600 mb-8" id="granted-student-name">Juan Pérez</p>
-                    <button id="back-to-scanner-btn" class="w-full max-w-xs mx-auto bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition">Volver</button>
-                </div>
-                
-                <div id="access-denied-view" class="hidden w-full text-center p-6 fade-in">
-                    <div class="w-24 h-24 bg-red-100 rounded-full mx-auto flex items-center justify-center mb-5">
-                        <i class="fas fa-times text-5xl text-red-500"></i>
-                    </div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Acceso Denegado</h1>
-                    <p class="text-lg text-gray-600 mb-8" id="denied-student-name">Carlos Rodríguez</p>
-                    <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-left mb-8 max-w-xs mx-auto">
-                         <div class="flex items-center">
-                            <i class="fas fa-exclamation-triangle text-red-500 w-6 text-center mr-3"></i>
+                 
+                 <div id="access-result-view" class="hidden w-full max-w-sm mx-auto text-center p-4 fade-in">
+                    <div id="access-result-card" class="rounded-2xl shadow-xl p-6 text-white transition-colors duration-300">
+                        <div class="w-24 h-24 bg-white/20 rounded-full mx-auto flex items-center justify-center mb-5">
+                            <i id="access-result-icon" class="fas text-5xl"></i>
+                        </div>
+                        <h1 id="access-result-title" class="text-3xl font-bold mb-2"></h1>
+                        <p id="access-result-student-name" class="text-lg font-light mb-4"></p>
+                        
+                        <div class="bg-white/10 rounded-xl p-4 text-left text-sm space-y-2">
+                             <div>
+                                <p class="opacity-70">ID de Alumno:</p>
+                                <p id="access-result-student-id" class="font-semibold"></p>
+                            </div>
                             <div>
-                                <p class="font-semibold text-red-800">Pago Vencido</p>
-                                <p class="text-sm text-gray-600">El último pago fue hace 15 días.</p>
+                                <p class="opacity-70">Vencimiento:</p>
+                                <p id="access-result-expiration" class="font-semibold"></p>
                             </div>
                         </div>
                     </div>
-                    <button id="back-to-scanner-btn-denied" class="w-full max-w-xs mx-auto bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition">Volver</button>
+                    <div class="mt-8 space-y-3">
+                        <button id="renew-payment-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition">
+                            <i class="fas fa-money-check-alt mr-2"></i> Renovar / Pagar Mensualidad
+                        </button>
+                        <button id="back-to-scanner-btn" class="w-full bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition">Escanear de Nuevo</button>
+                    </div>
                 </div>
             </div>
             
@@ -252,6 +253,22 @@
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Vencida</span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
+                                    <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
+                                    <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr class="student-row hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">1004</td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">AE</div>
+                                        <span class="text-sm font-medium text-gray-900">Alumno de Ejemplo</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activa</span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
                                     <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
@@ -618,11 +635,58 @@
             </form>
         </div>
     </div>
+    
+    <div id="payment-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 slide-in">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Renovar Mensualidad</h3>
+                <button id="close-payment-modal-btn" class="text-gray-500 hover:text-gray-800">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Alumno</label>
+                    <p id="payment-student-name" class="mt-1 text-lg font-semibold text-gray-900"></p>
+                </div>
+                <div>
+                    <label for="change-class-select" class="block text-sm font-medium text-gray-700">Cambiar de Clase (Opcional)</label>
+                    <select id="change-class-select" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <option value="Clase Infantil">Clase Infantil</option>
+                        <option value="Clase Avanzada">Clase Avanzada</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="payment-method-select" class="block text-sm font-medium text-gray-700">Método de Pago</label>
+                    <select id="payment-method-select" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <option>Efectivo</option>
+                        <option>Transferencia</option>
+                        <option>Tarjeta de Débito</option>
+                        <option>Tarjeta de Crédito</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-6 flex flex-col space-y-2">
+                <button id="confirm-payment-btn" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition">Confirmar Pago</button>
+                <button id="cancel-payment-btn" class="w-full bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="qr-canvas" class="hidden"></canvas>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            let nextStudentId = 1004;
-            const studentSampleId = "1004"; // ID de ejemplo para el alumno
+            let nextStudentId = 1005; 
+            const studentSampleId = "1004";
+            let currentScannedStudentId = null;
+
+            const studentsDB = [{
+                id: "1004",
+                nombre: "Alumno de Ejemplo",
+                clase: "Clase Avanzada",
+                fechaVencimiento: new Date('2025-09-28')
+            }];
 
             const successSound = new Audio('Acceso_Concedido.mp3');
             const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -640,12 +704,15 @@
             const mainHeader = document.getElementById('main-header');
             const scannerMainView = document.getElementById('scanner-main-view');
             const cameraView = document.getElementById('camera-view');
-            const accessGrantedView = document.getElementById('access-granted-view');
-            const accessDeniedView = document.getElementById('access-denied-view');
+            const accessResultView = document.getElementById('access-result-view');
             const scanButton = document.getElementById('scan-button');
             const accessInput = document.getElementById('access-input');
             const backToScannerBtn = document.getElementById('back-to-scanner-btn');
-            const backToScannerBtnDenied = document.getElementById('back-to-scanner-btn-denied');
+
+            const video = document.getElementById('qr-video');
+            const canvas = document.getElementById('qr-canvas');
+            const context = canvas.getContext('2d', { willReadFrequently: true });
+            let scanning = false;
             
             const profileBtn = document.getElementById('profile-btn');
             const profileDropdown = document.getElementById('profile-dropdown');
@@ -653,7 +720,6 @@
             const adminNav = document.getElementById('admin-nav');
             const studentNav = document.getElementById('student-nav');
 
-            // --- Lógica de Sesión y Roles ---
             function checkLogin() {
                 const loggedInUser = localStorage.getItem('userRole');
                 if (loggedInUser) {
@@ -677,9 +743,8 @@
                     studentNav.classList.add('flex');
                     adminNav.classList.add('hidden');
                     
-                    // Generar QR para el alumno
                     const qrCodeContainer = document.getElementById('qrcode');
-                    qrCodeContainer.innerHTML = ''; // Limpiar QR anterior
+                    qrCodeContainer.innerHTML = '';
                     new QRCode(qrCodeContainer, {
                         text: studentSampleId,
                         width: 128,
@@ -739,45 +804,147 @@
                 }
             });
 
-            function processAccess() {
-                setTimeout(() => {
-                    cameraView.classList.add('hidden');
-                    if (Math.random() > 0.5) {
-                        accessGrantedView.classList.remove('hidden');
-                        successSound.play().catch(e => console.error("Error al reproducir sonido:", e));
-                    } else {
-                        accessDeniedView.classList.remove('hidden');
-                        errorSound.play().catch(e => console.error("Error al reproducir sonido:", e));
-                    }
-                    accessInput.value = ''; 
-                }, 2000);
+            function stopScanner() {
+                scanning = false;
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                }
+            }
+            
+            function formatCustomDate(date) {
+                const weekDays = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+                const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+                const dayName = weekDays[date.getDay()];
+                const dayOfMonth = date.getDate();
+                const monthName = months[date.getMonth()];
+                const year = date.getFullYear();
+                return `${dayName}, ${dayOfMonth}/${monthName}/${year}`;
             }
 
-            scanButton.addEventListener('click', function() {
+            function processAccess(id) {
+                stopScanner();
+                currentScannedStudentId = id; 
+                accessInput.value = '';
+                scannerMainView.classList.add('hidden');
+                cameraView.classList.add('hidden');
+
+                const student = studentsDB.find(s => s.id === id);
+
+                const card = document.getElementById('access-result-card');
+                const icon = document.getElementById('access-result-icon');
+                const title = document.getElementById('access-result-title');
+                const name = document.getElementById('access-result-student-name');
+                const studentIdEl = document.getElementById('access-result-student-id');
+                const expirationEl = document.getElementById('access-result-expiration');
+                
+                card.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500');
+                icon.classList.remove('fa-check', 'fa-times', 'fa-exclamation-triangle');
+
+                if (student) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const timeDiff = student.fechaVencimiento.getTime() - today.getTime();
+                    const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                    
+                    studentIdEl.textContent = student.id;
+                    expirationEl.textContent = formatCustomDate(student.fechaVencimiento);
+
+                    if (daysLeft > 5) {
+                        card.classList.add('bg-green-500');
+                        icon.classList.add('fa-check');
+                        title.textContent = "Acceso Concedido";
+                        name.textContent = `Bienvenido, ${student.nombre}`;
+                        successSound.play();
+                    } else if (daysLeft >= 0 && daysLeft <= 5) {
+                        card.classList.add('bg-yellow-500');
+                        icon.classList.add('fa-exclamation-triangle');
+                        title.textContent = "Acceso Concedido";
+                        name.textContent = `${student.nombre}, tu pago está por vencer.`;
+                        successSound.play();
+                    } else {
+                        card.classList.add('bg-red-500');
+                        icon.classList.add('fa-times');
+                        title.textContent = "Acceso Denegado";
+                        name.textContent = student.nombre;
+                        expirationEl.textContent = `Vencido desde ${formatCustomDate(student.fechaVencimiento)}`;
+                        errorSound.play();
+                    }
+                } else {
+                    card.classList.add('bg-red-500');
+                    icon.classList.add('fa-times');
+                    title.textContent = "Acceso Denegado";
+                    name.textContent = "Alumno no encontrado";
+                    studentIdEl.textContent = id;
+                    expirationEl.textContent = 'N/A';
+                    errorSound.play();
+                }
+                
+                accessResultView.classList.remove('hidden');
+            }
+
+            function startScanner() {
                 scannerMainView.classList.add('hidden');
                 cameraView.classList.remove('hidden');
-                processAccess();
-            });
+                scanning = true;
+
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                        video.setAttribute("playsinline", true);
+                        video.play();
+                        requestAnimationFrame(tick);
+                    })
+                    .catch(function(err) {
+                        console.error("Error al acceder a la cámara:", err);
+                        alert("No se pudo acceder a la cámara. Asegúrate de dar los permisos necesarios.");
+                        resetToScannerView();
+                    });
+            }
+            
+            function tick() {
+                if (!scanning) return;
+                
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+
+                    if (code) {
+                        processAccess(code.data);
+                        return;
+                    }
+                }
+                requestAnimationFrame(tick);
+            }
+
+            scanButton.addEventListener('click', startScanner);
 
             accessInput.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
-                    processAccess();
+                    const studentId = accessInput.value.trim();
+                    if (studentId) {
+                        processAccess(studentId);
+                    }
                 }
             });
 
             function resetToScannerView() {
-                accessGrantedView.classList.add('hidden');
-                accessDeniedView.classList.add('hidden');
+                stopScanner();
+                accessResultView.classList.add('hidden');
                 cameraView.classList.add('hidden');
                 scannerMainView.classList.remove('hidden');
             }
             backToScannerBtn.addEventListener('click', resetToScannerView);
-            backToScannerBtnDenied.addEventListener('click', resetToScannerView);
 
             const allViews = document.querySelectorAll('#main-content > div');
             const navItems = document.querySelectorAll('.nav-item');
             
             function switchView(viewId) {
+                stopScanner();
                 allViews.forEach(view => view.classList.add('hidden'));
                 const activeView = document.getElementById(viewId);
                 if (activeView) activeView.classList.remove('hidden');
@@ -801,7 +968,6 @@
                 });
             });
 
-            // Lógica de la barra de progreso y estado del alumno
             function updateProfileInfo() {
                 const progressBar = document.getElementById('progress-bar');
                 const daysLeftText = document.getElementById('days-left-text');
@@ -809,16 +975,16 @@
                 const studentIdText = document.getElementById('student-id-text');
                 const studentStatusText = document.getElementById('student-status-text');
                 
-                // Actualizar ID
                 studentIdText.textContent = studentSampleId;
 
-                // --- FECHA DE VENCIMIENTO DE PRUEBA ---
-                const expirationDate = new Date();
-                // ** Cambia el número aquí para probar los estados **
-                // > 5 para verde, 1-5 para amarillo, <= 0 para rojo
-                expirationDate.setDate(expirationDate.getDate() + 8); 
+                const student = studentsDB.find(s => s.id === studentSampleId);
+                if (!student) return;
 
+                const expirationDate = student.fechaVencimiento;
+                
                 const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
                 const timeDiff = expirationDate.getTime() - today.getTime();
                 const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
                 
@@ -829,7 +995,6 @@
 
                 progressBar.style.width = `${progressPercentage}%`;
                 
-                // Limpiar clases de color anteriores
                 progressBar.classList.remove('bg-green-500', 'bg-yellow-400', 'bg-red-500');
                 daysLeftText.classList.remove('text-green-600', 'text-yellow-600', 'text-red-600');
                 studentStatusText.classList.remove('text-green-600', 'text-red-600');
@@ -840,38 +1005,71 @@
                     daysLeftText.textContent = `Quedan ${daysLeft} días`;
                     studentStatusText.textContent = 'Activo';
                     studentStatusText.classList.add('text-green-600');
-                } else if (daysLeft >= 1 && daysLeft <= 5) {
+                } else if (daysLeft >= 0 && daysLeft <= 5) {
                     progressBar.classList.add('bg-yellow-400');
                     daysLeftText.classList.add('text-yellow-600');
-                    daysLeftText.textContent = `Quedan ${daysLeft} días`;
-                     studentStatusText.textContent = 'Activo';
+                    daysLeftText.textContent = daysLeft > 0 ? `Quedan ${daysLeft} días` : 'Vence hoy';
+                    studentStatusText.textContent = 'Activo';
                     studentStatusText.classList.add('text-green-600');
                 } else {
                     progressBar.classList.add('bg-red-500');
                     daysLeftText.classList.add('text-red-600');
                     studentStatusText.textContent = 'Vencido';
                     studentStatusText.classList.add('text-red-600');
-                    if (daysLeft === 0) {
-                        daysLeftText.textContent = 'Vence hoy';
-                    } else {
-                        daysLeftText.textContent = `Vencido hace ${Math.abs(daysLeft)} días`;
-                    }
+                    daysLeftText.textContent = `Vencido hace ${Math.abs(daysLeft)} días`;
                 }
                 
-                // === INICIO: NUEVO FORMATO DE FECHA ===
-                const weekDays = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-                const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-                
-                const dayName = weekDays[expirationDate.getDay()];
-                const dayOfMonth = expirationDate.getDate();
-                const monthName = months[expirationDate.getMonth()];
-                const year = expirationDate.getFullYear();
+                expirationDateText.textContent = `Fecha de Vencimiento: ${formatCustomDate(expirationDate)}`;
+            }
+            
+            // --- INICIO: Lógica del Modal de Pago ---
+            const paymentModal = document.getElementById('payment-modal');
+            const renewPaymentBtn = document.getElementById('renew-payment-btn');
+            const closePaymentModalBtn = document.getElementById('close-payment-modal-btn');
+            const cancelPaymentBtn = document.getElementById('cancel-payment-btn');
+            const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
+            const paymentStudentName = document.getElementById('payment-student-name');
+            const changeClassSelect = document.getElementById('change-class-select');
+            const paymentMethodSelect = document.getElementById('payment-method-select');
 
-                const formattedDate = `${dayName}, ${dayOfMonth}/${monthName}/${year}`;
-                expirationDateText.textContent = `Fecha de Vencimiento: ${formattedDate}`;
-                // === FIN: NUEVO FORMATO DE FECHA ===
+            renewPaymentBtn.addEventListener('click', () => {
+                const student = studentsDB.find(s => s.id === currentScannedStudentId);
+                if (student) {
+                    paymentStudentName.textContent = student.nombre;
+                    changeClassSelect.value = student.clase;
+                    paymentModal.classList.remove('hidden');
+                } else {
+                    alert("No se encontró al alumno para renovar el pago.");
+                }
+            });
+
+            function closePaymentModal() {
+                paymentModal.classList.add('hidden');
             }
 
+            closePaymentModalBtn.addEventListener('click', closePaymentModal);
+            cancelPaymentBtn.addEventListener('click', closePaymentModal);
+
+            confirmPaymentBtn.addEventListener('click', () => {
+                const student = studentsDB.find(s => s.id === currentScannedStudentId);
+                if (student) {
+                    student.clase = changeClassSelect.value;
+                    
+                    const newExpirationDate = new Date();
+                    newExpirationDate.setDate(newExpirationDate.getDate() + 30);
+                    student.fechaVencimiento = newExpirationDate;
+                    
+                    const paymentMethod = paymentMethodSelect.value;
+
+                    alert(`Pago registrado para ${student.nombre} con ${paymentMethod}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.`);
+                    
+                    closePaymentModal();
+                    resetToScannerView();
+                }
+            });
+            // --- FIN: Lógica del Modal de Pago ---
+
+            // --- Código de Modales de Clase y Alumno (sin cambios) ---
             const classModal = document.getElementById('class-modal');
             const addClassBtn = document.getElementById('add-class-btn');
             const closeClassModalBtn = document.getElementById('close-class-modal-btn');
@@ -890,7 +1088,7 @@
                     const name = card.querySelector('h3').textContent;
                     const days = card.querySelector('p').textContent;
                     const details = card.querySelectorAll('.border-t p');
-                    const time = details[0].textContent.replace('Horario: ', '');
+                    const time = details[0].textContent.replace('Instructor: ', '');
                     const instructor = details[1].textContent.replace('Instructor: ', '');
 
                     document.getElementById('class-modal-title').textContent = 'Editar Clase';

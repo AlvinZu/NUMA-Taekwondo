@@ -617,7 +617,10 @@
             updateDoc,
             collection,
             onSnapshot,
-            runTransaction
+            runTransaction,
+            query, // <--- FUNCIÓN IMPORTADA
+            where, // <--- FUNCIÓN IMPORTADA
+            getDocs // <--- FUNCIÓN IMPORTADA
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Tu configuración de Firebase
@@ -631,7 +634,7 @@
             measurementId: "G-3731P1WWB6"
         };
 
-        // Inicializar Firebase
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);

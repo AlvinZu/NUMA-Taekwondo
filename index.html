@@ -211,71 +211,7 @@
                             </tr>
                         </thead>
                         <tbody id="student-table-body" class="divide-y divide-gray-200">
-                            <tr class="student-row hover:bg-gray-50">
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">1001</td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">AD</div>
-                                        <span class="text-sm font-medium text-gray-900">Administrador</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activa</span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
-                                    <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
-                                    <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr class="student-row hover:bg-gray-50">
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">1002</td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">IN</div>
-                                        <span class="text-sm font-medium text-gray-900">Instructor Mirage Gym</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activa</span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
-                                    <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
-                                    <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr class="student-row hover:bg-gray-50">
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">1003</td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">PR</div>
-                                        <span class="text-sm font-medium text-gray-900">prueba5</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Vencida</span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
-                                    <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
-                                    <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr class="student-row hover:bg-gray-50">
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">1004</td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">AE</div>
-                                        <span class="text-sm font-medium text-gray-900">Alumno de Ejemplo</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activa</span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
-                                    <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
-                                    <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -337,11 +273,10 @@
                  <h2 class="text-3xl font-bold text-gray-800 mb-6">Mi Perfil</h2>
                  <div class="bg-white rounded-2xl shadow-lg p-6 space-y-4">
                     <div class="flex flex-col items-center text-center">
-                        <div class="w-24 h-24 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-4xl mb-4">
-                            AE
+                        <div id="student-initials-avatar" class="w-24 h-24 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-4xl mb-4">
                         </div>
-                        <h3 class="text-2xl font-bold text-gray-900">Alumno de Ejemplo</h3>
-                        <p class="text-gray-500">alumno@gmail.com</p>
+                        <h3 id="student-profile-name" class="text-2xl font-bold text-gray-900"></h3>
+                        <p id="student-profile-email" class="text-gray-500"></p>
                     </div>
 
                     <div class="flex justify-center py-4">
@@ -359,7 +294,7 @@
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Clase</p>
-                            <p class="font-medium text-gray-800">Clase Avanzada</p>
+                            <p id="student-profile-class" class="font-medium text-gray-800"></p>
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Instructor</p>
@@ -482,26 +417,26 @@
                 <div class="space-y-4">
                     <div>
                         <label for="add-student-name" class="block text-sm font-medium text-gray-700">Nombre Completo</label>
-                        <input type="text" id="add-student-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <input type="text" id="add-student-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
                     </div>
                      <div>
                         <label for="add-student-email" class="block text-sm font-medium text-gray-700">Correo</label>
-                        <input type="email" id="add-student-email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <input type="email" id="add-student-email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
                     </div>
                      <div>
                         <label for="add-student-password" class="block text-sm font-medium text-gray-700">Contraseña</label>
-                        <input type="password" id="add-student-password" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <input type="password" id="add-student-password" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
                     </div>
                     <div>
                         <label for="add-student-class" class="block text-sm font-medium text-gray-700">Clase</label>
-                        <select id="add-student-class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <select id="add-student-class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
                             <option>Clase Infantil</option>
                             <option>Clase Avanzada</option>
                         </select>
                     </div>
                     <div>
                         <label for="add-student-gender" class="block text-sm font-medium text-gray-700">Sexo</label>
-                        <select id="add-student-gender" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <select id="add-student-gender" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
                             <option>Hombre</option>
                             <option>Mujer</option>
                             <option>No binario</option>
@@ -510,33 +445,24 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label for="add-student-birthdate" class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
-                            <input type="date" id="add-student-birthdate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                            <input type="date" id="add-student-birthdate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
                         </div>
                         <div>
                             <label for="add-student-joindate" class="block text-sm font-medium text-gray-700">Fecha de Ingreso</label>
-                            <input type="date" id="add-student-joindate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                            <input type="date" id="add-student-joindate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
                         </div>
                     </div>
                      <div>
                         <label for="add-student-tutor" class="block text-sm font-medium text-gray-700">Tutor (Opcional)</label>
-                        <input type="text" id="add-student-tutor" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <input type="text" id="add-student-tutor" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
                     </div>
                     <div>
                         <label for="add-student-phone" class="block text-sm font-medium text-gray-700">Teléfono</label>
-                        <input type="tel" id="add-student-phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <input type="tel" id="add-student-phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
                     </div>
                     <div class="border-t pt-4">
-                        <label for="add-student-payment" class="block text-sm font-medium text-gray-700">Pago de Mensualidad</label>
-                        <input type="number" id="add-student-payment" placeholder="Ej: 500.00" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
-                    </div>
-                    <div>
-                        <label for="add-student-payment-method" class="block text-sm font-medium text-gray-700">Método de Pago</label>
-                        <select id="add-student-payment-method" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
-                            <option>Efectivo</option>
-                            <option>Transferencia</option>
-                            <option>Tarjeta de Débito</option>
-                            <option>Tarjeta de Crédito</option>
-                        </select>
+                        <label for="add-student-payment-date" class="block text-sm font-medium text-gray-700">Fecha de Primer Pago</label>
+                        <input type="date" id="add-student-payment-date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end space-x-3">
@@ -560,17 +486,18 @@
                 <div class="space-y-3">
                     <div><p class="text-sm text-gray-500">Nombre Completo</p><p id="view-student-name" class="font-medium text-gray-800"></p></div>
                     <div><p class="text-sm text-gray-500">Correo</p><p id="view-student-email" class="font-medium text-gray-800"></p></div>
-                    <div><p class="text-sm text-gray-500">Rol</p><p id="view-student-role" class="font-medium text-gray-800"></p></div>
                     <div><p class="text-sm text-gray-500">Clase</p><p id="view-student-class" class="font-medium text-gray-800"></p></div>
                     <div><p class="text-sm text-gray-500">Sexo</p><p id="view-student-gender" class="font-medium text-gray-800"></p></div>
                     <div class="grid grid-cols-2 gap-4">
                         <div><p class="text-sm text-gray-500">Fecha de Nacimiento</p><p id="view-student-birthdate" class="font-medium text-gray-800"></p></div>
                         <div><p class="text-sm text-gray-500">Fecha de Ingreso</p><p id="view-student-joindate" class="font-medium text-gray-800"></p></div>
                     </div>
-                    <div><p class="text-sm text-gray-500">Fecha de Vencimiento</p><p id="view-student-expiration" class="font-medium text-gray-800"></p></div>
-                    <div><p class="text-sm text-gray-500">Estado</p><p id="view-student-status" class="font-medium text-gray-800"></p></div>
-                    <div><p class="text-sm text-gray-500">Tutor</p><p id="view-student-tutor" class="font-medium text-gray-800"></p></div>
                     <div><p class="text-sm text-gray-500">Teléfono</p><p id="view-student-phone" class="font-medium text-gray-800"></p></div>
+                    <div><p class="text-sm text-gray-500">Tutor</p><p id="view-student-tutor" class="font-medium text-gray-800"></p></div>
+                    <div class="border-t pt-3 mt-3">
+                        <p class="text-sm text-gray-500">Fecha de Vencimiento</p><p id="view-student-expiration" class="font-medium text-gray-800"></p>
+                        <p class="text-sm text-gray-500 mt-2">Estado</p><p id="view-student-status" class="font-medium text-gray-800"></p>
+                    </div>
                 </div>
                 <div class="mt-6 flex justify-end">
                     <button id="edit-student-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Editar</button>
@@ -585,14 +512,7 @@
                     </div>
                     <div>
                         <label for="edit-student-email" class="block text-sm font-medium text-gray-700">Correo</label>
-                        <input type="email" id="edit-student-email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
-                    </div>
-                    <div>
-                        <label for="edit-student-role" class="block text-sm font-medium text-gray-700">Rol</label>
-                        <select id="edit-student-role" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
-                            <option>Alumno</option>
-                            <option>Instructor</option>
-                        </select>
+                        <input type="email" id="edit-student-email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100" disabled>
                     </div>
                     <div>
                         <label for="edit-student-class" class="block text-sm font-medium text-gray-700">Clase</label>
@@ -650,6 +570,10 @@
                     <p id="payment-student-name" class="mt-1 text-lg font-semibold text-gray-900"></p>
                 </div>
                 <div>
+                    <label for="renewal-date-input" class="block text-sm font-medium text-gray-700">Fecha de Renovación</label>
+                    <input type="date" id="renewal-date-input" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                </div>
+                <div>
                     <label for="change-class-select" class="block text-sm font-medium text-gray-700">Cambiar de Clase (Opcional)</label>
                     <select id="change-class-select" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
                         <option value="Clase Infantil">Clase Infantil</option>
@@ -675,312 +599,374 @@
 
     <canvas id="qr-canvas" class="hidden"></canvas>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            let nextStudentId = 1005; 
-            const studentSampleId = "1004";
-            let currentScannedStudentId = null;
+    <script type="module">
+        // Importar funciones de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword,
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            updateDoc,
+            collection,
+            onSnapshot,
+            runTransaction
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-            const studentsDB = [{
-                id: "1004",
-                nombre: "Alumno de Ejemplo",
-                clase: "Clase Avanzada",
-                fechaVencimiento: new Date('2025-09-28')
-            }];
+        // Tu configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAL334v9TpRDAnqSfwjgMFJLxka-R270iA",
+            authDomain: "taekwondo-8abcd.firebaseapp.com",
+            projectId: "taekwondo-8abcd",
+            storageBucket: "taekwondo-8abcd.appspot.com",
+            messagingSenderId: "1017113225998",
+            appId: "1:1017113225998:web:f0ea0ee1387a284c6a055f",
+            measurementId: "G-3731P1WWB6"
+        };
 
-            const successSound = new Audio('Acceso_Concedido.mp3');
-            const errorSound = new Audio('Acceso_Denegado.mp3');
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-            const authContainer = document.getElementById('auth-container');
-            const appContainer = document.getElementById('app-container');
-            const welcomeScreen = document.getElementById('welcome-screen');
-            const loginScreen = document.getElementById('login-screen');
-            const goToLoginBtn = document.getElementById('go-to-login-btn');
-            const loginForm = document.getElementById('login-form');
-            const loginError = document.getElementById('login-error');
-            const logoutBtn = document.getElementById('logout-btn');
-            const backToWelcomeBtn = document.getElementById('back-to-welcome-btn');
-            
-            const mainHeader = document.getElementById('main-header');
-            const scannerMainView = document.getElementById('scanner-main-view');
-            const cameraView = document.getElementById('camera-view');
-            const accessResultView = document.getElementById('access-result-view');
-            const scanButton = document.getElementById('scan-button');
-            const accessInput = document.getElementById('access-input');
-            const backToScannerBtn = document.getElementById('back-to-scanner-btn');
+        // --- Variables Globales y Elementos del DOM ---
+        let currentScannedStudentId = null;
+        let currentViewedStudentId = null;
 
-            const video = document.getElementById('qr-video');
-            const canvas = document.getElementById('qr-canvas');
-            const context = canvas.getContext('2d', { willReadFrequently: true });
-            let scanning = false;
-            
-            const profileBtn = document.getElementById('profile-btn');
-            const profileDropdown = document.getElementById('profile-dropdown');
-            
-            const adminNav = document.getElementById('admin-nav');
-            const studentNav = document.getElementById('student-nav');
+        const successSound = new Audio('Acceso_Concedido.mp3');
+        const errorSound = new Audio('Acceso_Denegado.mp3');
 
-            function checkLogin() {
-                const loggedInUser = localStorage.getItem('userRole');
-                if (loggedInUser) {
+        // ... (el resto de las declaraciones de constantes del DOM no cambian)
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const loginScreen = document.getElementById('login-screen');
+        const goToLoginBtn = document.getElementById('go-to-login-btn');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn');
+        const backToWelcomeBtn = document.getElementById('back-to-welcome-btn');
+        const scannerMainView = document.getElementById('scanner-main-view');
+        const cameraView = document.getElementById('camera-view');
+        const accessResultView = document.getElementById('access-result-view');
+        const scanButton = document.getElementById('scan-button');
+        const accessInput = document.getElementById('access-input');
+        const backToScannerBtn = document.getElementById('back-to-scanner-btn');
+        const video = document.getElementById('qr-video');
+        const canvas = document.getElementById('qr-canvas');
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        let scanning = false;
+        const profileBtn = document.getElementById('profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        const adminNav = document.getElementById('admin-nav');
+        const studentNav = document.getElementById('student-nav');
+
+        // --- Lógica de Autenticación y Sesión con Firebase ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDocRef = doc(db, "students", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+
+                if (userDocSnap.exists()) {
+                    const userRole = userDocSnap.data().rol;
                     authContainer.style.display = 'none';
                     appContainer.style.display = 'flex';
-                    setupUIForRole(loggedInUser);
+                    setupUIForRole(userRole, user);
                 } else {
-                    appContainer.style.display = 'none';
-                    authContainer.style.display = 'block';
+                    console.error("No se encontró documento para el usuario:", user.uid);
+                    signOut(auth);
                 }
-            }
-            
-            function setupUIForRole(role) {
-                if (role === 'admin') {
-                    adminNav.classList.remove('hidden');
-                    adminNav.classList.add('flex');
-                    studentNav.classList.add('hidden');
-                    switchView('qr-scanner-view');
-                } else if (role === 'student') {
-                    studentNav.classList.remove('hidden');
-                    studentNav.classList.add('flex');
-                    adminNav.classList.add('hidden');
-                    
-                    const qrCodeContainer = document.getElementById('qrcode');
-                    qrCodeContainer.innerHTML = '';
-                    new QRCode(qrCodeContainer, {
-                        text: studentSampleId,
-                        width: 128,
-                        height: 128,
-                    });
-                    
-                    switchView('my-profile-view');
-                    updateProfileInfo(); 
-                }
-            }
-
-            goToLoginBtn.addEventListener('click', () => {
-                welcomeScreen.classList.add('hidden');
-                loginScreen.style.display = 'flex';
-            });
-            
-            backToWelcomeBtn.addEventListener('click', () => {
-                loginScreen.style.display = 'none';
-                welcomeScreen.classList.remove('hidden');
-            });
-
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-
-                if (email === 'admin@tkd.com' && password === 'Numatkd123') {
-                    localStorage.setItem('userRole', 'admin');
-                    checkLogin();
-                } else if (email === 'alumno@gmail.com' && password === 'alumno123') {
-                    localStorage.setItem('userRole', 'student');
-                    checkLogin();
-                } else {
-                    loginError.classList.remove('hidden');
-                }
-            });
-
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                localStorage.removeItem('userRole');
+            } else {
                 appContainer.style.display = 'none';
                 authContainer.style.display = 'block';
                 welcomeScreen.classList.remove('hidden');
                 loginScreen.style.display = 'none';
-                loginForm.reset();
-                loginError.classList.add('hidden');
-            });
-
-            profileBtn.addEventListener('click', function(event) {
-                event.stopPropagation();
-                profileDropdown.classList.toggle('hidden');
-            });
-
-            window.addEventListener('click', function() {
-                if (!profileDropdown.classList.contains('hidden')) {
-                    profileDropdown.classList.add('hidden');
-                }
-            });
-
-            function stopScanner() {
-                scanning = false;
-                if (video.srcObject) {
-                    video.srcObject.getTracks().forEach(track => track.stop());
-                }
             }
-            
-            function formatCustomDate(date) {
-                const weekDays = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-                const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-                const dayName = weekDays[date.getDay()];
-                const dayOfMonth = date.getDate();
-                const monthName = months[date.getMonth()];
-                const year = date.getFullYear();
-                return `${dayName}, ${dayOfMonth}/${monthName}/${year}`;
-            }
+        });
 
-            function processAccess(id) {
-                stopScanner();
-                currentScannedStudentId = id; 
-                accessInput.value = '';
-                scannerMainView.classList.add('hidden');
-                cameraView.classList.add('hidden');
-
-                const student = studentsDB.find(s => s.id === id);
-
-                const card = document.getElementById('access-result-card');
-                const icon = document.getElementById('access-result-icon');
-                const title = document.getElementById('access-result-title');
-                const name = document.getElementById('access-result-student-name');
-                const studentIdEl = document.getElementById('access-result-student-id');
-                const expirationEl = document.getElementById('access-result-expiration');
+        function setupUIForRole(role, user) {
+            if (role === 'admin') {
+                adminNav.classList.remove('hidden');
+                adminNav.classList.add('flex');
+                studentNav.classList.add('hidden');
+                switchView('qr-scanner-view');
+                listenForStudentChanges();
+            } else if (role === 'student') {
+                studentNav.classList.remove('hidden');
+                studentNav.classList.add('flex');
+                adminNav.classList.add('hidden');
                 
-                card.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500');
-                icon.classList.remove('fa-check', 'fa-times', 'fa-exclamation-triangle');
+                // --- INICIO DE LA MODIFICACIÓN ---
+                // Ahora el QR se genera con el ID Numérico del alumno
+                const qrCodeContainer = document.getElementById('qrcode');
+                qrCodeContainer.innerHTML = '';
+                
+                getDoc(doc(db, "students", user.uid)).then(userDoc => {
+                    if (userDoc.exists()) {
+                        const numericId = userDoc.data().numericId;
+                        if (numericId) {
+                            new QRCode(qrCodeContainer, {
+                                text: numericId.toString(), // Usar el ID numérico como contenido del QR
+                                width: 128,
+                                height: 128,
+                            });
+                        }
+                    }
+                });
+                // --- FIN DE LA MODIFICACIÓN ---
+                
+                switchView('my-profile-view');
+                updateProfileInfo(user.uid); 
+            }
+        }
 
-                if (student) {
+        goToLoginBtn.addEventListener('click', () => {
+            welcomeScreen.classList.add('hidden');
+            loginScreen.style.display = 'flex';
+        });
+        
+        backToWelcomeBtn.addEventListener('click', () => {
+            loginScreen.style.display = 'none';
+            welcomeScreen.classList.remove('hidden');
+        });
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            loginError.classList.add('hidden');
+
+            signInWithEmailAndPassword(auth, email, password)
+                .catch((error) => {
+                    console.error("Error de inicio de sesión:", error);
+                    loginError.textContent = "Correo o contraseña incorrectos.";
+                    loginError.classList.remove('hidden');
+                });
+        });
+
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            signOut(auth);
+        });
+
+        profileBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            profileDropdown.classList.toggle('hidden');
+        });
+
+        window.addEventListener('click', () => {
+            if (!profileDropdown.classList.contains('hidden')) {
+                profileDropdown.classList.add('hidden');
+            }
+        });
+
+        // --- Lógica del Control de Acceso ---
+        function stopScanner() {
+            scanning = false;
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+        }
+        
+        function formatCustomDate(date) {
+            if (!date) return 'N/A';
+            const weekDays = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+            const dayName = weekDays[date.getDay()];
+            const dayOfMonth = date.getDate();
+            const monthName = months[date.getMonth()];
+            const year = date.getFullYear();
+            return `${dayName}, ${dayOfMonth}/${monthName}/${year}`;
+        }
+
+        async function processAccess(id) {
+            stopScanner();
+            accessInput.value = '';
+            scannerMainView.classList.add('hidden');
+            cameraView.classList.add('hidden');
+
+            const card = document.getElementById('access-result-card');
+            const icon = document.getElementById('access-result-icon');
+            const title = document.getElementById('access-result-title');
+            const name = document.getElementById('access-result-student-name');
+            const studentIdEl = document.getElementById('access-result-student-id');
+            const expirationEl = document.getElementById('access-result-expiration');
+            
+            card.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500');
+            icon.classList.remove('fa-check', 'fa-times', 'fa-exclamation-triangle');
+
+            try {
+                // --- LÓGICA CORREGIDA ---
+                // Se busca al alumno por su 'numericId'
+                const studentsRef = collection(db, "students");
+                const q = query(studentsRef, where("numericId", "==", parseInt(id)));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const studentDoc = querySnapshot.docs[0];
+                    currentScannedStudentId = studentDoc.id; // Guardar el UID real para futuras operaciones
+                    const student = studentDoc.data();
+                    const expirationDate = student.fechaVencimiento.toDate();
+
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    const timeDiff = student.fechaVencimiento.getTime() - today.getTime();
+                    const timeDiff = expirationDate.getTime() - today.getTime();
                     const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
                     
-                    studentIdEl.textContent = student.id;
-                    expirationEl.textContent = formatCustomDate(student.fechaVencimiento);
+                    studentIdEl.textContent = student.numericId;
+                    expirationEl.textContent = formatCustomDate(expirationDate);
 
                     if (daysLeft > 5) {
                         card.classList.add('bg-green-500');
                         icon.classList.add('fa-check');
                         title.textContent = "Acceso Concedido";
-                        name.textContent = `Bienvenido, ${student.nombre}`;
+                        name.textContent = `Bienvenido, ${student.name}`;
                         successSound.play();
                     } else if (daysLeft >= 0 && daysLeft <= 5) {
                         card.classList.add('bg-yellow-500');
                         icon.classList.add('fa-exclamation-triangle');
                         title.textContent = "Acceso Concedido";
-                        name.textContent = `${student.nombre}, tu pago está por vencer.`;
+                        name.textContent = `${student.name}, tu pago está por vencer.`;
                         successSound.play();
                     } else {
                         card.classList.add('bg-red-500');
                         icon.classList.add('fa-times');
                         title.textContent = "Acceso Denegado";
-                        name.textContent = student.nombre;
-                        expirationEl.textContent = `Vencido desde ${formatCustomDate(student.fechaVencimiento)}`;
+                        name.textContent = student.name;
+                        expirationEl.textContent = `Vencido desde ${formatCustomDate(expirationDate)}`;
                         errorSound.play();
                     }
                 } else {
+                    currentScannedStudentId = null;
                     card.classList.add('bg-red-500');
                     icon.classList.add('fa-times');
                     title.textContent = "Acceso Denegado";
-                    name.textContent = "Alumno no encontrado";
+                    name.textContent = "ID de Alumno no encontrado";
                     studentIdEl.textContent = id;
                     expirationEl.textContent = 'N/A';
                     errorSound.play();
                 }
-                
-                accessResultView.classList.remove('hidden');
-            }
-
-            function startScanner() {
-                scannerMainView.classList.add('hidden');
-                cameraView.classList.remove('hidden');
-                scanning = true;
-
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                    .then(function(stream) {
-                        video.srcObject = stream;
-                        video.setAttribute("playsinline", true);
-                        video.play();
-                        requestAnimationFrame(tick);
-                    })
-                    .catch(function(err) {
-                        console.error("Error al acceder a la cámara:", err);
-                        alert("No se pudo acceder a la cámara. Asegúrate de dar los permisos necesarios.");
-                        resetToScannerView();
-                    });
+            } catch (error) {
+                console.error("Error al procesar el acceso:", error);
+                alert("Ocurrió un error al consultar la base de datos. Asegúrate de que el índice de Firestore se haya creado correctamente.");
+                resetToScannerView(); // Volver al escáner si hay un error
+                return; // Detener la ejecución
             }
             
-            function tick() {
-                if (!scanning) return;
-                
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    canvas.height = video.videoHeight;
-                    canvas.width = video.videoWidth;
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert",
-                    });
+            accessResultView.classList.remove('hidden');
+        }
 
-                    if (code) {
-                        processAccess(code.data);
-                        return;
-                    }
-                }
-                requestAnimationFrame(tick);
-            }
+        function startScanner() {
+            scannerMainView.classList.add('hidden');
+            cameraView.classList.remove('hidden');
+            scanning = true;
 
-            scanButton.addEventListener('click', startScanner);
-
-            accessInput.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter') {
-                    const studentId = accessInput.value.trim();
-                    if (studentId) {
-                        processAccess(studentId);
-                    }
-                }
-            });
-
-            function resetToScannerView() {
-                stopScanner();
-                accessResultView.classList.add('hidden');
-                cameraView.classList.add('hidden');
-                scannerMainView.classList.remove('hidden');
-            }
-            backToScannerBtn.addEventListener('click', resetToScannerView);
-
-            const allViews = document.querySelectorAll('#main-content > div');
-            const navItems = document.querySelectorAll('.nav-item');
-            
-            function switchView(viewId) {
-                stopScanner();
-                allViews.forEach(view => view.classList.add('hidden'));
-                const activeView = document.getElementById(viewId);
-                if (activeView) activeView.classList.remove('hidden');
-
-                if (viewId === 'qr-scanner-view') {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    video.setAttribute("playsinline", true);
+                    video.play();
+                    requestAnimationFrame(tick);
+                })
+                .catch(function(err) {
+                    console.error("Error al acceder a la cámara:", err);
+                    alert("No se pudo acceder a la cámara. Asegúrate de dar los permisos necesarios.");
                     resetToScannerView();
+                });
+        }
+        
+        function tick() {
+            if (!scanning) return;
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+
+                if (code) {
+                    processAccess(code.data);
+                    return;
                 }
-                
-                navItems.forEach(item => {
-                    item.classList.remove('active');
-                    if (item.getAttribute('data-view') === viewId) {
-                        item.classList.add('active');
-                    }
-                });
             }
+            requestAnimationFrame(tick);
+        }
 
+        scanButton.addEventListener('click', startScanner);
+
+        accessInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const studentId = accessInput.value.trim();
+                if (studentId) {
+                    alert("La búsqueda por ID numérico no está implementada. Por favor, usa el escáner QR.");
+                }
+            }
+        });
+
+        function resetToScannerView() {
+            stopScanner();
+            accessResultView.classList.add('hidden');
+            cameraView.classList.add('hidden');
+            scannerMainView.classList.remove('hidden');
+        }
+        backToScannerBtn.addEventListener('click', resetToScannerView);
+
+        const allViews = document.querySelectorAll('#main-content > div');
+        const navItems = document.querySelectorAll('.nav-item');
+        
+        function switchView(viewId) {
+            stopScanner();
+            allViews.forEach(view => view.classList.add('hidden'));
+            const activeView = document.getElementById(viewId);
+            if (activeView) activeView.classList.remove('hidden');
+
+            if (viewId === 'qr-scanner-view') {
+                resetToScannerView();
+            }
+            
             navItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    const viewId = this.getAttribute('data-view');
-                    switchView(viewId);
-                });
+                item.classList.remove('active');
+                if (item.getAttribute('data-view') === viewId) {
+                    item.classList.add('active');
+                }
             });
+        }
 
-            function updateProfileInfo() {
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const viewId = this.getAttribute('data-view');
+                switchView(viewId);
+            });
+        });
+
+        async function updateProfileInfo(uid) {
+            const studentDocRef = doc(db, "students", uid);
+            const studentDocSnap = await getDoc(studentDocRef);
+
+            if (studentDocSnap.exists()) {
+                const student = studentDocSnap.data();
+                const expirationDate = student.fechaVencimiento.toDate();
+
+                document.getElementById('student-id-text').textContent = student.numericId; 
+                document.getElementById('student-profile-name').textContent = student.name;
+                document.getElementById('student-profile-email').textContent = student.email;
+                document.getElementById('student-profile-class').textContent = student.clase;
+                document.getElementById('student-initials-avatar').textContent = student.name.substring(0, 2).toUpperCase();
+
                 const progressBar = document.getElementById('progress-bar');
                 const daysLeftText = document.getElementById('days-left-text');
                 const expirationDateText = document.getElementById('expiration-date-text');
-                const studentIdText = document.getElementById('student-id-text');
                 const studentStatusText = document.getElementById('student-status-text');
-                
-                studentIdText.textContent = studentSampleId;
-
-                const student = studentsDB.find(s => s.id === studentSampleId);
-                if (!student) return;
-
-                const expirationDate = student.fechaVencimiento;
                 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -1021,235 +1007,323 @@
                 
                 expirationDateText.textContent = `Fecha de Vencimiento: ${formatCustomDate(expirationDate)}`;
             }
+        }
+        
+        // --- Lógica del Modal de Pago ---
+        const paymentModal = document.getElementById('payment-modal');
+        const renewPaymentBtn = document.getElementById('renew-payment-btn');
+        const closePaymentModalBtn = document.getElementById('close-payment-modal-btn');
+        const cancelPaymentBtn = document.getElementById('cancel-payment-btn');
+        const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
+        const paymentStudentName = document.getElementById('payment-student-name');
+        const changeClassSelect = document.getElementById('change-class-select');
+        const paymentMethodSelect = document.getElementById('payment-method-select');
+        const renewalDateInput = document.getElementById('renewal-date-input');
+
+        renewPaymentBtn.addEventListener('click', async () => {
+            const studentDocRef = doc(db, "students", currentScannedStudentId);
+            const studentDocSnap = await getDoc(studentDocRef);
+
+            if (studentDocSnap.exists()) {
+                const student = studentDocSnap.data();
+                paymentStudentName.textContent = student.name;
+                changeClassSelect.value = student.clase;
+                renewalDateInput.value = new Date().toISOString().split('T')[0];
+                paymentModal.classList.remove('hidden');
+            } else {
+                alert("No se encontró al alumno para renovar el pago.");
+            }
+        });
+
+        function closePaymentModal() {
+            paymentModal.classList.add('hidden');
+        }
+
+        closePaymentModalBtn.addEventListener('click', closePaymentModal);
+        cancelPaymentBtn.addEventListener('click', closePaymentModal);
+
+        confirmPaymentBtn.addEventListener('click', async () => {
+            const studentDocRef = doc(db, "students", currentScannedStudentId);
             
-            // --- INICIO: Lógica del Modal de Pago ---
-            const paymentModal = document.getElementById('payment-modal');
-            const renewPaymentBtn = document.getElementById('renew-payment-btn');
-            const closePaymentModalBtn = document.getElementById('close-payment-modal-btn');
-            const cancelPaymentBtn = document.getElementById('cancel-payment-btn');
-            const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
-            const paymentStudentName = document.getElementById('payment-student-name');
-            const changeClassSelect = document.getElementById('change-class-select');
-            const paymentMethodSelect = document.getElementById('payment-method-select');
-
-            renewPaymentBtn.addEventListener('click', () => {
-                const student = studentsDB.find(s => s.id === currentScannedStudentId);
-                if (student) {
-                    paymentStudentName.textContent = student.nombre;
-                    changeClassSelect.value = student.clase;
-                    paymentModal.classList.remove('hidden');
-                } else {
-                    alert("No se encontró al alumno para renovar el pago.");
-                }
-            });
-
-            function closePaymentModal() {
-                paymentModal.classList.add('hidden');
+            const newClass = changeClassSelect.value;
+            const paymentMethod = paymentMethodSelect.value;
+            const renewalDateValue = renewalDateInput.value;
+            
+            if (!renewalDateValue) {
+                alert("Por favor, selecciona una fecha de renovación.");
+                return;
             }
 
-            closePaymentModalBtn.addEventListener('click', closePaymentModal);
-            cancelPaymentBtn.addEventListener('click', closePaymentModal);
+            const dateParts = renewalDateValue.split('-');
+            const renewalStartDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
 
-            confirmPaymentBtn.addEventListener('click', () => {
-                const student = studentsDB.find(s => s.id === currentScannedStudentId);
-                if (student) {
-                    student.clase = changeClassSelect.value;
-                    
-                    const newExpirationDate = new Date();
-                    newExpirationDate.setDate(newExpirationDate.getDate() + 30);
-                    student.fechaVencimiento = newExpirationDate;
-                    
-                    const paymentMethod = paymentMethodSelect.value;
-
-                    alert(`Pago registrado para ${student.nombre} con ${paymentMethod}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.`);
-                    
-                    closePaymentModal();
-                    resetToScannerView();
-                }
-            });
-            // --- FIN: Lógica del Modal de Pago ---
-
-            // --- Código de Modales de Clase y Alumno (sin cambios) ---
-            const classModal = document.getElementById('class-modal');
-            const addClassBtn = document.getElementById('add-class-btn');
-            const closeClassModalBtn = document.getElementById('close-class-modal-btn');
-            const cancelClassModalBtn = document.getElementById('cancel-class-modal-btn');
-            const editClassBtns = document.querySelectorAll('.edit-class-btn');
-
-            addClassBtn.addEventListener('click', () => {
-                document.getElementById('class-modal-title').textContent = 'Agregar Nueva Clase';
-                document.getElementById('class-form').reset();
-                classModal.classList.remove('hidden');
-            });
+            renewalStartDate.setDate(renewalStartDate.getDate() + 30);
             
-            editClassBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const card = e.target.closest('.rounded-lg');
-                    const name = card.querySelector('h3').textContent;
-                    const days = card.querySelector('p').textContent;
-                    const details = card.querySelectorAll('.border-t p');
-                    const time = details[0].textContent.replace('Instructor: ', '');
-                    const instructor = details[1].textContent.replace('Instructor: ', '');
-
-                    document.getElementById('class-modal-title').textContent = 'Editar Clase';
-                    document.getElementById('class-name').value = name;
-                    document.getElementById('class-days').value = days;
-                    document.getElementById('class-time').value = time;
-                    document.getElementById('class-instructor').value = instructor;
-                    
-                    classModal.classList.remove('hidden');
+            try {
+                await updateDoc(studentDocRef, {
+                    clase: newClass,
+                    fechaVencimiento: renewalStartDate
                 });
-            });
+                
+                const studentDocSnap = await getDoc(studentDocRef);
+                const student = studentDocSnap.data();
 
-            closeClassModalBtn.addEventListener('click', () => classModal.classList.add('hidden'));
-            cancelClassModalBtn.addEventListener('click', () => classModal.classList.add('hidden'));
+                alert(`Pago registrado para ${student.name} con ${paymentMethod}.\nNueva fecha de vencimiento: ${formatCustomDate(renewalStartDate)}.`);
+                
+                closePaymentModal();
+                resetToScannerView();
+            } catch (error) {
+                console.error("Error al actualizar el pago:", error);
+                alert("Hubo un error al registrar el pago.");
+            }
+        });
 
-            const studentModal = document.getElementById('student-modal');
-            const addStudentBtn = document.getElementById('add-student-btn');
-            const closeStudentModalBtn = document.getElementById('close-student-modal-btn');
-            const cancelStudentModalBtn = document.getElementById('cancel-student-modal-btn');
-            const addStudentForm = document.getElementById('add-student-form');
+        // --- Lógica de Gestión de Alumnos ---
+        const studentModal = document.getElementById('student-modal');
+        const addStudentBtn = document.getElementById('add-student-btn');
+        const closeStudentModalBtn = document.getElementById('close-student-modal-btn');
+        const cancelStudentModalBtn = document.getElementById('cancel-student-modal-btn');
+        const addStudentForm = document.getElementById('add-student-form');
 
-            addStudentBtn.addEventListener('click', () => studentModal.classList.remove('hidden'));
-            closeStudentModalBtn.addEventListener('click', () => studentModal.classList.add('hidden'));
-            cancelStudentModalBtn.addEventListener('click', () => studentModal.classList.add('hidden'));
+        addStudentBtn.addEventListener('click', () => studentModal.classList.remove('hidden'));
+        closeStudentModalBtn.addEventListener('click', () => studentModal.classList.add('hidden'));
+        cancelStudentModalBtn.addEventListener('click', () => studentModal.classList.add('hidden'));
 
-            addStudentForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const studentName = document.getElementById('add-student-name').value;
-                const newRow = document.createElement('tr');
-                newRow.className = 'student-row hover:bg-gray-50';
-                newRow.innerHTML = `
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${nextStudentId}</td>
-                    <td class="px-4 py-3 whitespace-nowrap">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">
-                                ${studentName.substring(0, 2).toUpperCase()}
-                            </div>
-                            <span class="text-sm font-medium text-gray-900">${studentName}</span>
-                        </div>
-                    </td>
-                    <td class="px-4 py-3 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activa</span>
-                    </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
-                        <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
-                        <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-                document.getElementById('student-table-body').appendChild(newRow);
-                nextStudentId++;
+        addStudentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('add-student-name').value;
+            const email = document.getElementById('add-student-email').value;
+            const password = document.getElementById('add-student-password').value;
+            const studentClass = document.getElementById('add-student-class').value;
+            const paymentDate = document.getElementById('add-student-payment-date').value;
+            const gender = document.getElementById('add-student-gender').value;
+            const birthdate = document.getElementById('add-student-birthdate').value;
+            const joindate = document.getElementById('add-student-joindate').value;
+            const tutor = document.getElementById('add-student-tutor').value;
+            const phone = document.getElementById('add-student-phone').value;
+
+            if (!name || !email || !password || !studentClass || !paymentDate) {
+                alert("Por favor, completa todos los campos requeridos.");
+                return;
+            }
+
+            try {
+                const newNumericId = await runTransaction(db, async (transaction) => {
+                    const counterRef = doc(db, "counters", "studentCounter");
+                    const counterDoc = await transaction.get(counterRef);
+
+                    if (!counterDoc.exists()) {
+                        throw "El documento del contador no existe.";
+                    }
+
+                    const newId = counterDoc.data().lastId + 1;
+                    transaction.update(counterRef, { lastId: newId });
+                    return newId;
+                });
+
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                const dateParts = paymentDate.split('-');
+                const expirationDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                expirationDate.setDate(expirationDate.getDate() + 30);
+
+                await setDoc(doc(db, "students", user.uid), {
+                    numericId: newNumericId,
+                    name: name,
+                    email: email,
+                    clase: studentClass,
+                    fechaVencimiento: expirationDate,
+                    rol: "student",
+                    genero: gender,
+                    fechaNacimiento: birthdate,
+                    fechaIngreso: joindate,
+                    tutor: tutor,
+                    telefono: phone
+                });
+
+                alert(`Alumno ${name} agregado con éxito con ID: ${newNumericId}`);
                 addStudentForm.reset();
                 studentModal.classList.add('hidden');
-                alert('Alumno agregado con el ID: ' + (nextStudentId - 1));
+
+            } catch (error) {
+                console.error("Error al agregar alumno:", error);
+                alert(`Error: ${error.message}`);
+            }
+        });
+
+        function listenForStudentChanges() {
+            const studentsCollection = collection(db, "students");
+            onSnapshot(studentsCollection, (snapshot) => {
+                const studentTableBody = document.getElementById('student-table-body');
+                studentTableBody.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const student = doc.data();
+                    if (!student.name) return; // Si un documento no tiene nombre, no lo mostramos.
+                    
+                    const expirationDate = student.fechaVencimiento.toDate();
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isExpired = expirationDate < today;
+
+                    const avatarColor = student.rol === 'admin' ? 'bg-blue-500' : 'bg-gray-400';
+                    const initials = student.name.substring(0, 2).toUpperCase();
+
+                    const newRow = document.createElement('tr');
+                    newRow.className = 'student-row hover:bg-gray-50';
+                    newRow.setAttribute('data-id', doc.id);
+                    
+                    newRow.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-semibold">${student.numericId || 'N/A'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">
+                                    ${initials}
+                                </div>
+                                <span class="text-sm font-medium text-gray-900">${student.name}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isExpired ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
+                                ${isExpired ? 'Vencida' : 'Activa'}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
+                            <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
+                            <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    studentTableBody.appendChild(newRow);
+                });
             });
+        }
+        
+        // --- Lógica de Modales Ver/Editar Alumno ---
+        const viewStudentModal = document.getElementById('view-student-modal');
+        const closeViewStudentModalBtn = document.getElementById('close-view-student-modal-btn');
+        const studentTableBody = document.getElementById('student-table-body');
+        const viewModeContent = document.getElementById('view-mode-content');
+        const editModeForm = document.getElementById('edit-mode-form');
+        const editStudentBtn = document.getElementById('edit-student-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        
+        async function openViewModal(studentId) {
+            currentViewedStudentId = studentId;
+            const studentDocRef = doc(db, "students", studentId);
+            const studentDocSnap = await getDoc(studentDocRef);
 
-            const viewStudentModal = document.getElementById('view-student-modal');
-            const closeViewStudentModalBtn = document.getElementById('close-view-student-modal-btn');
-            
-            const viewModeContent = document.getElementById('view-mode-content');
-            const editModeForm = document.getElementById('edit-mode-form');
-            const editStudentBtn = document.getElementById('edit-student-btn');
-            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            if (studentDocSnap.exists()) {
+                const data = studentDocSnap.data();
+                
+                // Poblar la vista de solo lectura
+                document.getElementById('view-student-name').textContent = data.name || 'N/A';
+                document.getElementById('view-student-email').textContent = data.email || 'N/A';
+                document.getElementById('view-student-class').textContent = data.clase || 'N/A';
+                document.getElementById('view-student-gender').textContent = data.genero || 'N/A';
+                document.getElementById('view-student-birthdate').textContent = data.fechaNacimiento || 'N/A';
+                document.getElementById('view-student-joindate').textContent = data.fechaIngreso || 'N/A';
+                document.getElementById('view-student-phone').textContent = data.telefono || 'N/A';
+                document.getElementById('view-student-tutor').textContent = data.tutor || 'N/A';
+                const expirationDate = data.fechaVencimiento.toDate();
+                const isExpired = expirationDate < new Date();
+                document.getElementById('view-student-expiration').textContent = formatCustomDate(expirationDate);
+                document.getElementById('view-student-status').textContent = isExpired ? 'Vencido' : 'Activo';
 
-            const sampleStudentData = {
-                name: "Instructor Mirage Gym",
-                email: "instructor@example.com",
-                role: "Instructor",
-                class: "Clase Avanzada",
-                gender: "Hombre",
-                birthdate: "1990-05-20",
-                joindate: "2022-01-15",
-                expiration: "2025-09-15",
-                status: "Activo",
-                tutor: "N/A",
-                phone: "555-123-4567"
-            };
-
-            function openViewModal(data) {
-                document.getElementById('view-student-name').textContent = data.name;
-                document.getElementById('view-student-email').textContent = data.email;
-                document.getElementById('view-student-role').textContent = data.role;
-                document.getElementById('view-student-class').textContent = data.class;
-                document.getElementById('view-student-gender').textContent = data.gender;
-                document.getElementById('view-student-birthdate').textContent = data.birthdate;
-                document.getElementById('view-student-joindate').textContent = data.joindate;
-                document.getElementById('view-student-expiration').textContent = data.expiration;
-                document.getElementById('view-student-status').textContent = data.status;
-                document.getElementById('view-student-tutor').textContent = data.tutor;
-                document.getElementById('view-student-phone').textContent = data.phone;
-
-                document.getElementById('edit-student-name').value = data.name;
-                document.getElementById('edit-student-email').value = data.email;
-                document.getElementById('edit-student-role').value = data.role;
-                document.getElementById('edit-student-class').value = data.class;
-                document.getElementById('edit-student-gender').value = data.gender;
-                document.getElementById('edit-student-birthdate').value = data.birthdate;
-                document.getElementById('edit-student-joindate').value = data.joindate;
-                document.getElementById('edit-student-tutor').value = data.tutor;
-                document.getElementById('edit-student-phone').value = data.phone;
+                // Poblar el formulario de edición
+                document.getElementById('edit-student-name').value = data.name || '';
+                document.getElementById('edit-student-email').value = data.email || '';
+                document.getElementById('edit-student-class').value = data.clase || 'Clase Infantil';
+                document.getElementById('edit-student-gender').value = data.genero || 'Hombre';
+                document.getElementById('edit-student-birthdate').value = data.fechaNacimiento || '';
+                document.getElementById('edit-student-joindate').value = data.fechaIngreso || '';
+                document.getElementById('edit-student-phone').value = data.telefono || '';
+                document.getElementById('edit-student-tutor').value = data.tutor || '';
 
                 viewModeContent.classList.remove('hidden');
                 editModeForm.classList.add('hidden');
                 viewStudentModal.classList.remove('hidden');
             }
+        }
 
-            document.getElementById('student-table-body').addEventListener('click', function(e) {
-                const row = e.target.closest('.student-row');
-                if (row) {
-                    openViewModal(sampleStudentData);
-                }
-            });
-
-            closeViewStudentModalBtn.addEventListener('click', () => {
-                viewStudentModal.classList.add('hidden');
-            });
-            
-            editStudentBtn.addEventListener('click', () => {
-                viewModeContent.classList.add('hidden');
-                editModeForm.classList.remove('hidden');
-            });
-
-            cancelEditBtn.addEventListener('click', () => {
-                editModeForm.classList.add('hidden');
-                viewModeContent.classList.remove('hidden');
-            });
-
-            editModeForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                alert('¡Cambios guardados!');
-                editModeForm.classList.add('hidden');
-                viewModeContent.classList.remove('hidden');
-            });
-
-            const searchInput = document.getElementById('student-search-input');
-            const tableBody = document.getElementById('student-table-body');
-
-            searchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                const allTableRows = tableBody.getElementsByTagName('tr');
-
-                for (let i = 0; i < allTableRows.length; i++) {
-                    const row = allTableRows[i];
-                    const idCell = row.getElementsByTagName('td')[0];
-                    const nameCell = row.getElementsByTagName('td')[1];
-                    
-                    if (idCell && nameCell) {
-                        const idText = idCell.textContent.toLowerCase();
-                        const nameText = nameCell.textContent.toLowerCase();
-
-                        if (idText.includes(searchTerm) || nameText.includes(searchTerm)) {
-                            row.style.display = "";
-                        } else {
-                            row.style.display = "none";
-                        }
-                    }
-                }
-            });
-            
-            // Iniciar la aplicación
-            checkLogin();
+        studentTableBody.addEventListener('click', function(e) {
+            const row = e.target.closest('.student-row');
+            if (row) {
+                const studentId = row.getAttribute('data-id');
+                openViewModal(studentId);
+            }
         });
+
+        closeViewStudentModalBtn.addEventListener('click', () => viewStudentModal.classList.add('hidden'));
+
+        editStudentBtn.addEventListener('click', () => {
+            viewModeContent.classList.add('hidden');
+            editModeForm.classList.remove('hidden');
+        });
+
+        cancelEditBtn.addEventListener('click', () => {
+            editModeForm.classList.add('hidden');
+            viewModeContent.classList.remove('hidden');
+        });
+
+        editModeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const studentDocRef = doc(db, "students", currentViewedStudentId);
+            
+            try {
+                await updateDoc(studentDocRef, {
+                    name: document.getElementById('edit-student-name').value,
+                    clase: document.getElementById('edit-student-class').value,
+                    genero: document.getElementById('edit-student-gender').value,
+                    fechaNacimiento: document.getElementById('edit-student-birthdate').value,
+                    fechaIngreso: document.getElementById('edit-student-joindate').value,
+                    telefono: document.getElementById('edit-student-phone').value,
+                    tutor: document.getElementById('edit-student-tutor').value
+                });
+                alert('¡Cambios guardados con éxito!');
+                viewStudentModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Error al guardar cambios:", error);
+                alert("No se pudieron guardar los cambios.");
+            }
+        });
+
+        // --- Lógica de Modales de Clase ---
+        const classModal = document.getElementById('class-modal');
+        const addClassBtn = document.getElementById('add-class-btn');
+        const closeClassModalBtn = document.getElementById('close-class-modal-btn');
+        const cancelClassModalBtn = document.getElementById('cancel-class-modal-btn');
+        const editClassBtns = document.querySelectorAll('.edit-class-btn');
+
+        addClassBtn.addEventListener('click', () => {
+            document.getElementById('class-modal-title').textContent = 'Agregar Nueva Clase';
+            document.getElementById('class-form').reset();
+            classModal.classList.remove('hidden');
+        });
+            
+        editClassBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const card = e.target.closest('.rounded-lg');
+                const name = card.querySelector('h3').textContent;
+                const days = card.querySelector('p').textContent;
+                const details = card.querySelectorAll('.border-t p');
+                const time = details[0].textContent.replace('Horario: ', '');
+                const instructor = details[1].textContent.replace('Instructor: ', '');
+
+                document.getElementById('class-modal-title').textContent = 'Editar Clase';
+                document.getElementById('class-name').value = name;
+                document.getElementById('class-days').value = days;
+                document.getElementById('class-time').value = time;
+                document.getElementById('class-instructor').value = instructor;
+                    
+                classModal.classList.remove('hidden');
+            });
+        });
+
+        closeClassModalBtn.addEventListener('click', () => classModal.classList.add('hidden'));
+        cancelClassModalBtn.addEventListener('click', () => classModal.classList.add('hidden'));
+
+        // Iniciar la aplicación
+        checkLogin();
     </script>
 </body>
 </html>

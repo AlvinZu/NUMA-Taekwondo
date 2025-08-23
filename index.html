@@ -606,11 +606,11 @@
 
             // --- Lógica de Sesión ---
             if (localStorage.getItem('isLoggedIn') === 'true') {
-                authContainer.classList.add('hidden');
+                authContainer.style.display = 'none';
                 appContainer.style.display = 'flex';
             } else {
                 appContainer.style.display = 'none';
-                authContainer.classList.remove('hidden');
+                authContainer.style.display = 'block';
             }
 
             goToLoginBtn.addEventListener('click', () => {
@@ -625,7 +625,7 @@
 
                 if (email === 'admin@tkd.com' && password === 'Numatkd123') {
                     localStorage.setItem('isLoggedIn', 'true');
-                    authContainer.classList.add('hidden');
+                    authContainer.style.display = 'none';
                     appContainer.style.display = 'flex';
                     switchView('qr-scanner-view');
                 } else {
@@ -636,7 +636,10 @@
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 localStorage.removeItem('isLoggedIn');
-                location.reload();
+                appContainer.style.display = 'none';
+                authContainer.style.display = 'block';
+                welcomeScreen.classList.remove('hidden');
+                loginScreen.style.display = 'none';
             });
 
             profileBtn.addEventListener('click', function(event) {
@@ -656,10 +659,10 @@
                     cameraView.classList.add('hidden');
                     if (Math.random() > 0.5) {
                         accessGrantedView.classList.remove('hidden');
-                        if(successSound.readyState >= 2) successSound.play();
+                        successSound.play().catch(e => console.error("Error al reproducir sonido:", e));
                     } else {
                         accessDeniedView.classList.remove('hidden');
-                        if(errorSound.readyState >= 2) errorSound.play();
+                        errorSound.play().catch(e => console.error("Error al reproducir sonido:", e));
                     }
                     accessInput.value = ''; // Limpia el campo
                 }, 2000); // Simula 2 segundos de escaneo

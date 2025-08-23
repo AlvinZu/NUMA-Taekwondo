@@ -3,1076 +3,811 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NUMA Taekwondo - Gestión Escolar</title>
+    <title>NUMA Taekwondo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    
+  
+    <link rel="apple-touch-icon" sizes="152x152" href="icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512x512.png">
+    <link rel="manifest" href="manifest.json">
+  
     <style>
-        .belt-white { background-color: #ffffff; color: #000000; }
-        .belt-yellow { background-color: #ffff00; color: #000000; }
-        .belt-green { background-color: #008000; color: #ffffff; }
-        .belt-blue { background-color: #0000ff; color: #ffffff; }
-        .belt-red { background-color: #ff0000; color: #ffffff; }
-        .belt-black { background-color: #000000; color: #ffffff; }
-        
-        .sidebar {
-            transition: all 0.3s;
+        /* Estilos personalizados */
+        .bottom-nav {
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
         }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            .sidebar.open {
-                transform: translateX(0);
-            }
+        .nav-item.active i, .nav-item.active span {
+            color: #ef4444; /* Color rojo para el ítem activo */
         }
-        
-        .qr-scanner-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .main-search-bar {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
-        
-        .qr-scanner-container {
-            width: 90%;
-            max-width: 500px;
-            position: relative;
+         /* Animación para la confirmación y el modal */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-        
-        #qr-video {
-            width: 100%;
-            border-radius: 8px;
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        
-        .belt-indicator {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-            border: 2px solid #333;
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .slide-in {
+             animation: slideIn 0.3s ease-out forwards;
+        }
+        /* Estilos para el menú desplegable de perfil */
+        .profile-dropdown {
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+        .student-row {
+            cursor: pointer;
         }
     </style>
 </head>
-<body class="bg-gray-100 font-sans">
-    <!-- Navegación -->
-    <nav class="bg-red-600 text-white p-4 shadow-md">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <button id="sidebar-toggle" class="md:hidden text-white hidden">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-                <h1 class="text-xl font-bold">NUMA Taekwondo</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-                <div id="user-profile" class="hidden">
-                    <div class="flex items-center space-x-2">
-                        <img id="user-avatar" src="https://via.placeholder.com/40" alt="User" class="rounded-full">
-                        <span id="user-name">Usuario</span>
+<body class="bg-gray-50 font-sans">
+    <!-- Main App Container - Ahora es adaptable a pantallas más grandes -->
+    <div class="w-full sm:max-w-xl md:max-w-3xl lg:max-w-5xl mx-auto bg-white min-h-screen flex flex-col">
+        <!-- El Header ahora se muestra en todas las pantallas y es de color rojo -->
+        <header id="main-header" class="bg-red-600 text-white p-4 shadow-md">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                        <i class="fas fa-fist-raised text-red-600 text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-bold">NUMA Taekwondo</h1>
+                </div>
+                <div class="flex items-center space-x-3 relative">
+                    <button id="notifications-btn" class="relative">
+                        <i class="far fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 bg-yellow-400 text-black text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
+                    </button>
+                    <!-- Contenedor del ícono de perfil y menú desplegable -->
+                    <div class="relative">
+                        <button id="profile-btn">
+                            <i class="far fa-user-circle text-xl"></i>
+                        </button>
+                        <!-- Menú Desplegable -->
+                        <div id="profile-dropdown" class="profile-dropdown hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 origin-top-right">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt w-5 mr-2"></i>Cerrar Sesión
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <button id="logout-btn" class="bg-red-700 hover:bg-red-800 px-4 py-2 rounded hidden">
-                    <i class="fas fa-sign-out-alt"></i> Salir
-                </button>
-                <button id="login-btn" class="bg-white text-red-600 hover:bg-gray-200 px-4 py-2 rounded font-medium hidden">
-                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-                </button>
             </div>
-        </div>
-    </nav>
+        </header>
+        
+        <main class="flex-1 overflow-y-auto pb-20" id="main-content">
+            <div id="qr-scanner-view" class="p-4">
+                 <!-- Vista Principal del Escáner -->
+                <div id="scanner-main-view" class="w-full">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Control de Acceso</h2>
+                    <div class="relative main-search-bar max-w-lg mx-auto">
+                        <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+                        <input type="text" id="access-input" placeholder="Ingresar ID o escanear..." class="w-full pl-14 pr-14 py-4 text-lg border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <button id="scan-button" class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-600">
+                            <i class="fas fa-qrcode text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
 
-    <!-- Main Content -->
-    <div class="flex">
-        <!-- Sidebar - Barra Lateral de Menú -->
-        <aside class="sidebar bg-white w-64 min-h-screen shadow-md fixed md:relative z-20">
-            <div class="p-4">
-                <div id="admin-nav" class="hidden">
-                    <h3 class="font-bold text-lg mb-4 text-gray-700">Administración</h3>
-                    <ul class="space-y-2">
-                        <li><a href="#" class="dashboard-link block px-4 py-2 rounded hover:bg-red-100 text-red-600"><i class="fas fa-tachometer-alt mr-2"></i> Dashboard</a></li>
-                        <li><a href="#" class="students-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-users mr-2"></i> Alumnos</a></li>
-                        <li><a href="#" class="classes-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-calendar-alt mr-2"></i> Clases</a></li>
-                        <li><a href="#" class="payments-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-money-bill-wave mr-2"></i> Pagos</a></li>
-                        <li><a href="#" class="reports-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-chart-bar mr-2"></i> Reportes</a></li>
-                    </ul>
+                <!-- Vista de la Cámara (Oculta por defecto) -->
+                <div id="camera-view" class="hidden w-full max-w-lg mx-auto text-center">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Escaneando...</h2>
+                    <div class="relative w-full aspect-square bg-black rounded-2xl overflow-hidden flex items-center justify-center shadow-inner">
+                         <video id="qr-video" class="w-full h-full object-cover" playsinline></video>
+                         <div class="absolute w-60 h-60 border-4 border-dashed border-white/50 rounded-2xl"></div>
+                    </div>
+                     <p class="text-gray-500 mt-4">Apunte la cámara al código QR del alumno</p>
                 </div>
-                
-                <div id="instructor-nav" class="hidden">
-                    <h3 class="font-bold text-lg mb-4 text-gray-700">Instructor</h3>
-                    <ul class="space-y-2">
-                        <li><a href="#" class="instructor-dashboard-link block px-4 py-2 rounded hover:bg-red-100 text-red-600"><i class="fas fa-tachometer-alt mr-2"></i> Hoy</a></li>
-                        <li><a href="#" class="attendance-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-clipboard-check mr-2"></i> Asistencia</a></li>
-                        <li><a href="#" class="progress-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-chart-line mr-2"></i> Progreso Alumnos</a></li>
-                    </ul>
-                </div>
-                
-                <div id="student-nav" class="hidden">
-                    <h3 class="font-bold text-lg mb-4 text-gray-700">Alumno</h3>
-                    <ul class="space-y-2">
-                        <li><a href="#" class="profile-link block px-4 py-2 rounded hover:bg-red-100 text-red-600"><i class="fas fa-user mr-2"></i> Mi Perfil</a></li>
-                        <li><a href="#" class="my-progress-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-chart-line mr-2"></i> Mi Progreso</a></li>
-                        <li><a href="#" class="schedule-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-calendar mr-2"></i> Horarios</a></li>
-                        <li><a href="#" class="qr-link block px-4 py-2 rounded hover:bg-gray-100"><i class="fas fa-qrcode mr-2"></i> Mi QR</a></li>
-                    </ul>
-                </div>
-            </div>
-        </aside>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 p-6 ml-0 md:ml-64">
-            <!-- Login/Signup Form -->
-            <div id="auth-container" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-                <h2 class="text-2xl font-bold text-center mb-6 text-red-600">NUMA Taekwondo</h2>
-                <div class="flex justify-center mb-6">
-                    <img src="https://via.placeholder.com/150" alt="NUMA Logo" class="h-24">
+                 <!-- Vista de Acceso Concedido (Oculta por defecto) -->
+                 <div id="access-granted-view" class="hidden w-full text-center p-6 fade-in">
+                    <div class="w-24 h-24 bg-green-100 rounded-full mx-auto flex items-center justify-center mb-5">
+                        <i class="fas fa-check text-5xl text-green-500"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Acceso Concedido</h1>
+                    <p class="text-lg text-gray-600 mb-8" id="granted-student-name">Juan Pérez</p>
+                    <button id="back-to-scanner-btn" class="w-full max-w-xs mx-auto bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition">Volver</button>
                 </div>
                 
-                <div id="login-form">
-                    <div class="mb-4">
-                        <label for="email" class="block text-gray-700 mb-2">Correo Electrónico</label>
-                        <input type="email" id="email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                <!-- Vista de Acceso Denegado (Oculta por defecto) -->
+                <div id="access-denied-view" class="hidden w-full text-center p-6 fade-in">
+                    <div class="w-24 h-24 bg-red-100 rounded-full mx-auto flex items-center justify-center mb-5">
+                        <i class="fas fa-times text-5xl text-red-500"></i>
                     </div>
-                    <div class="mb-6">
-                        <label for="password" class="block text-gray-700 mb-2">Contraseña</label>
-                        <input type="password" id="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Acceso Denegado</h1>
+                    <p class="text-lg text-gray-600 mb-8" id="denied-student-name">Carlos Rodríguez</p>
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-left mb-8 max-w-xs mx-auto">
+                         <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-red-500 w-6 text-center mr-3"></i>
+                            <div>
+                                <p class="font-semibold text-red-800">Pago Vencido</p>
+                                <p class="text-sm text-gray-600">El último pago fue hace 15 días.</p>
+                            </div>
+                        </div>
                     </div>
-                    <button id="login-submit" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition mb-4">
-                        Iniciar Sesión
-                    </button>
-                    <button id="google-login" class="w-full bg-white text-gray-700 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition mb-4">
-                        <i class="fab fa-google mr-2 text-red-500"></i> Continuar con Google
-                    </button>
-                    <p class="text-center text-gray-600">¿No tienes cuenta? <button id="show-signup" class="text-red-600 hover:underline">Regístrate</button></p>
-                </div>
-                
-              <!-- Formulario de Registro -->
-                <div id="signup-form" class="hidden">
-                    <div class="mb-4">
-                        <label for="signup-name" class="block text-gray-700 mb-2">Nombre Completo</label>
-                        <input type="text" id="signup-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                    </div>
-                    <div class="mb-4">
-                        <label for="signup-email" class="block text-gray-700 mb-2">Correo Electrónico</label>
-                        <input type="email" id="signup-email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                    </div>
-                    <div class="mb-4">
-                        <label for="signup-password" class="block text-gray-700 mb-2">Contraseña</label>
-                        <input type="password" id="signup-password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                    </div>
-                    <div class="mb-4">
-                        <label for="signup-role" class="block text-gray-700 mb-2">Rol</label>
-                        <select id="signup-role" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <option value="student">Alumno/Padre</option>
-                            <option value="instructor">Instructor</option>
-                            <option value="admin">Administrador</option>
-                        </select>
-                    </div>
-                    <button id="signup-submit" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition mb-4">
-                        Registrarse
-                    </button>
-                    <p class="text-center text-gray-600">¿Ya tienes cuenta? <button id="show-login" class="text-red-600 hover:underline">Inicia Sesión</button></p>
+                    <button id="back-to-scanner-btn-denied" class="w-full max-w-xs mx-auto bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition">Volver</button>
                 </div>
             </div>
             
-            <!-- Admin Dashboard - Panel de administración -->
-            <div id="admin-dashboard" class="hidden">
-                <h2 class="text-2xl font-bold mb-6 text-gray-800">Panel de Administración</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
-                                <i class="fas fa-users text-xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-gray-500">Alumnos</p>
-                                <p class="text-2xl font-bold" id="total-students">120</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-                                <i class="fas fa-calendar-check text-xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-gray-500">Asistencias Hoy</p>
-                                <p class="text-2xl font-bold" id="today-attendance">45</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
-                                <i class="fas fa-money-bill-wave text-xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-gray-500">Ingresos Mensuales</p>
-                                <p class="text-2xl font-bold">$<span id="monthly-income">12,500</span></p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
-                                <i class="fas fa-star text-xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-gray-500">Próximos Exámenes</p>
-                                <p class="text-2xl font-bold" id="next-exams">8</p>
-                            </div>
-                        </div>
+            <div id="students-view" class="hidden p-4">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">Gestión de Alumnos</h2>
+                    <div class="flex space-x-2">
+                        <button id="add-student-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Agregar Alumno
+                        </button>
+                        <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center">
+                           <i class="fas fa-file-pdf mr-2"></i> Exportar a PDF
+                        </button>
                     </div>
                 </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-semibold mb-4">Distribución de Cintas</h3>
-                        <canvas id="beltDistributionChart" height="200"></canvas>
+
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0 sm:space-x-2">
+                    <div class="relative flex-grow w-full">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="student-search-input" placeholder="Buscar alumnos..." class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500">
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-semibold mb-4">Asistencia por Clase (Últimos 7 días)</h3>
-                        <canvas id="attendanceChart" height="200"></canvas>
-                    </div>
+                    <select class="w-full sm:w-auto border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-1 focus:ring-red-500">
+                        <option>Ordenar por ID (menor a mayor)</option>
+                        <option>Ordenar por ID (mayor a menor)</option>
+                        <option>Ordenar por Nombre (A-Z)</option>
+                        <option>Ordenar por Nombre (Z-A)</option>
+                        <option>Ordenar por Alumnos Activos</option>
+                        <option>Ordenar por Alumnos Vencidos</option>
+                    </select>
                 </div>
-                
-                <div class="bg-white p-6 rounded-lg shadow mb-8">
-                    <h3 class="text-lg font-semibold mb-4">Alumnos para Promoción</h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cinta Actual</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asistencias</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">Juan Pérez</td>
-                                    <td class="px-6 py-4 whitespace-nowrap"><span class="belt-indicator belt-yellow"></span> Amarilla</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">24/20</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <button class="promote-btn bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">Promover</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">María Gómez</td>
-                                    <td class="px-6 py-4 whitespace-nowrap"><span class="belt-indicator belt-white"></span> Blanca</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">22/20</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <button class="promote-btn bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">Promover</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Admin Students Management - Admini Gestión de Estudiantes  -->
-            <div id="admin-students" class="hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Gestión de Alumnos</h2>
-                    <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Nuevo Alumno
-                    </button>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
-                    <div class="p-4 border-b">
-                        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                            <div class="mb-4 md:mb-0 md:w-1/2">
-                                <div class="relative">
-                                    <input type="text" placeholder="Buscar alumno..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                                    <div class="absolute left-3 top-2.5 text-gray-400">
-                                        <i class="fas fa-search"></i>
+
+                <div class="bg-white rounded-lg shadow overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-table-body" class="divide-y divide-gray-200">
+                            <tr class="student-row hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">1001</td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">AD</div>
+                                        <span class="text-sm font-medium text-gray-900">Administrador</span>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="flex space-x-2">
-                                <select class="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                                    <option>Todas las cintas</option>
-                                    <option>Blanca</option>
-                                    <option>Amarilla</option>
-                                    <option>Verde</option>
-                                    <option>Azul</option>
-                                    <option>Roja</option>
-                                    <option>Negra</option>
-                                </select>
-                                <button class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg">
-                                    <i class="fas fa-filter"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cinta</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edad</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Asistencia</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0 h-10 w-10">
-                                                <img class="h-10 w-10 rounded-full" src="https://via.placeholder.com/40" alt="">
-                                            </div>
-                                            <div class="ml-4">
-                                                <div class="text-sm font-medium text-gray-900">Juan Pérez</div>
-                                                <div class="text-sm text-gray-500">ID: ST001</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="belt-indicator belt-yellow"></span> Amarilla
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">10 años</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">mama@email.com</div>
-                                        <div class="text-sm text-gray-500">555-1234</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">Ayer</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button class="text-red-600 hover:text-red-900 mr-3">Editar</button>
-                                        <button class="text-blue-600 hover:text-blue-900">Promover</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0 h-10 w-10">
-                                                <img class="h-10 w-10 rounded-full" src="https://via.placeholder.com/40" alt="">
-                                            </div>
-                                            <div class="ml-4">
-                                                <div class="text-sm font-medium text-gray-900">María Gómez</div>
-                                                <div class="text-sm text-gray-500">ID: ST002</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="belt-indicator belt-white"></span> Blanca
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">8 años</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">papa@email.com</div>
-                                        <div class="text-sm text-gray-500">555-5678</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">Hace 3 días</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button class="text-red-600 hover:text-red-900 mr-3">Editar</button>
-                                        <button class="text-blue-600 hover:text-blue-900">Promover</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
-                        <div class="flex-1 flex justify-between sm:hidden">
-                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"> Anterior </a>
-                            <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"> Siguiente </a>
-                        </div>
-                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                            <div>
-                                <p class="text-sm text-gray-700">
-                                    Mostrando
-                                    <span class="font-medium">1</span>
-                                    a
-                                    <span class="font-medium">10</span>
-                                    de
-                                    <span class="font-medium">120</span>
-                                    resultados
-                                </p>
-                            </div>
-                            <div>
-                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                    <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                        <span class="sr-only">Anterior</span>
-                                        <i class="fas fa-chevron-left"></i>
-                                    </a>
-                                    <a href="#" aria-current="page" class="z-10 bg-red-50 border-red-500 text-red-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium"> 1 </a>
-                                    <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium"> 2 </a>
-                                    <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium"> 3 </a>
-                                    <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                        <span class="sr-only">Siguiente</span>
-                                        <i class="fas fa-chevron-right"></i>
-                                    </a>
-                                </nav>
-                            </div>
-                        </div>
-                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activa</span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
+                                    <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
+                                    <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr class="student-row hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">1002</td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">IN</div>
+                                        <span class="text-sm font-medium text-gray-900">Instructor Mirage Gym</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activa</span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
+                                    <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
+                                    <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr class="student-row hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">1003</td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">PR</div>
+                                        <span class="text-sm font-medium text-gray-900">prueba5</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Vencida</span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
+                                    <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
+                                    <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             
-            <!-- Instructor Dashboard - Panel del instructor -->
-            <div id="instructor-dashboard" class="hidden">
-                <h2 class="text-2xl font-bold mb-6 text-gray-800">Clases de Hoy</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="text-lg font-semibold">Infantiles - 5:00 PM</h3>
-                                <p class="text-gray-600">Lunes y Miércoles</p>
-                            </div>
-                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Hoy</span>
-                        </div>
-                        <div class="mb-4">
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-600">Alumnos inscritos:</span>
-                                <span class="font-medium">15</span>
-                            </div>
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-600">Promedio asistencia:</span>
-                                <span class="font-medium">12</span>
-                            </div>
-                        </div>
-                        <button class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
-                            <i class="fas fa-clipboard-check mr-2"></i> Tomar Asistencia
-                        </button>
-                    </div>
-                    
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="text-lg font-semibold">Adultos - 7:00 PM</h3>
-                                <p class="text-gray-600">Martes y Jueves</p>
-                            </div>
-                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Hoy</span>
-                        </div>
-                        <div class="mb-4">
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-600">Alumnos inscritos:</span>
-                                <span class="font-medium">20</span>
-                            </div>
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-600">Promedio asistencia:</span>
-                                <span class="font-medium">15</span>
-                            </div>
-                        </div>
-                        <button class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
-                            <i class="fas fa-clipboard-check mr-2"></i> Tomar Asistencia
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="bg-white p-6 rounded-lg shadow mb-8">
-                    <h3 class="text-lg font-semibold mb-4">Próximas Clases</h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Día</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grupo</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alumnos</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">Miércoles</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">5:00 PM</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Infantiles</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">15</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">Jueves</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">7:00 PM</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Adultos</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">20</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">Sábado</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">9:00 AM</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Avanzados</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">12</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Instructor Attendance - Asistencia por el instructor -->
-            <div id="instructor-attendance" class="hidden">
+            <div id="classes-view" class="hidden p-4">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Toma de Asistencia</h2>
-                    <div class="flex items-center space-x-2">
-                        <select id="class-select" class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <option>Selecciona una clase</option>
-                            <option>Infantiles - Lunes y Miércoles 5:00 PM</option>
-                            <option>Adultos - Martes y Jueves 7:00 PM</option>
-                            <option>Avanzados - Sábado 9:00 AM</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
-                    <div class="p-4 border-b flex justify-between items-center">
-                        <div>
-                            <h3 class="font-semibold">Infantiles - Lunes y Miércoles 5:00 PM</h3>
-                            <p class="text-sm text-gray-600">15 alumnos inscritos</p>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button id="manual-attendance-btn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                                <i class="fas fa-clipboard-list mr-2"></i> Manual
-                            </button>
-                            <button id="qr-attendance-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                                <i class="fas fa-qrcode mr-2"></i> Escanear QR
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="manual-attendance-list" class="hidden">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cinta</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asistencia</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <img class="h-10 w-10 rounded-full" src="https://via.placeholder.com/40" alt="">
-                                                </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">Juan Pérez</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="belt-indicator belt-yellow"></span> Amarilla
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <input type="checkbox" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <img class="h-10 w-10 rounded-full" src="https://via.placeholder.com/40" alt="">
-                                                </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">María Gómez</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="belt-indicator belt-white"></span> Blanca
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <input type="checkbox" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="p-4 border-t flex justify-end">
-                            <button class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
-                                <i class="fas fa-save mr-2"></i> Guardar Asistencia
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="qr-scanner-overlay" class="qr-scanner-overlay hidden">
-                    <div class="qr-scanner-container">
-                        <video id="qr-video" playsinline></video>
-                        <div class="mt-4 text-center text-white">
-                            <p>Escanea el código QR del alumno para registrar su asistencia</p>
-                        </div>
-                        <button id="close-scanner" class="mt-4 bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
-                            <i class="fas fa-times mr-2"></i> Cancelar
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="qr-confirmation" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
-                        <h3 class="text-lg font-semibold mb-4">Confirmar Asistencia</h3>
-                        <p id="qr-student-name" class="mb-4">¿Marcar asistencia para <span class="font-semibold">Juan Pérez</span>?</p>
-                        <div class="flex justify-end space-x-3">
-                            <button id="cancel-confirmation" class="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">Cancelar</button>
-                            <button id="confirm-attendance" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Confirmar</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Student Profile - Perfil del estudiante -->
-            <div id="student-profile" class="hidden">
-                <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
-                    <div class="p-6 flex flex-col md:flex-row items-start md:items-center">
-                        <div class="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
-                            <img class="h-24 w-24 rounded-full" src="https://via.placeholder.com/150" alt="Student photo">
-                        </div>
-                        <div class="flex-1">
-                            <h2 class="text-2xl font-bold text-gray-800">Juan Pérez</h2>
-                            <div class="mt-2 flex items-center">
-                                <div class="belt-indicator belt-yellow"></div>
-                                <span class="text-lg font-medium ml-2">Cinta Amarilla</span>
-                            </div>
-                            <div class="mt-2 text-gray-600">
-                                <p><i class="fas fa-birthday-cake mr-2"></i> 10 años</p>
-                                <p><i class="fas fa-user-tie mr-2"></i> Tutor: Mamá - 555-1234</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 md:mt-0">
-                            <button id="show-qr-btn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 flex items-center">
-                                <i class="fas fa-qrcode mr-2"></i> Mi QR
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-semibold mb-4">Progreso hacia el próximo examen</h3>
-                        <div class="mb-2 flex justify-between">
-                            <span>Asistencias requeridas: 20</span>
-                            <span class="font-medium">15/20</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-4">
-                            <div class="bg-green-600 h-4 rounded-full" style="width: 75%"></div>
-                        </div>
-                        <div class="mt-4">
-                            <p class="text-sm text-gray-600">Faltan 5 asistencias para ser elegible para el examen de cinta verde.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-semibold mb-4">Próximo pago</h3>
-                        <div class="flex items-center mb-2">
-                            <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
-                                <i class="fas fa-money-bill-wave text-xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-gray-600">Vence el 15 de Julio</p>
-                                <p class="text-xl font-bold">$500 MXN</p>
-                            </div>
-                        </div>
-                        <button class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition mt-4">
-                            <i class="fas fa-credit-card mr-2"></i> Pagar Ahora
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="bg-white p-6 rounded-lg shadow mb-8">
-                    <h3 class="text-lg font-semibold mb-4">Últimas asistencias</h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clase</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">Lunes, 3 Jul</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Infantiles 5:00 PM</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Sabonim Rodríguez</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">Miércoles, 28 Jun</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Infantiles 5:00 PM</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Sabonim Rodríguez</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">Lunes, 26 Jun</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Infantiles 5:00 PM</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Sabonim García</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Student QR Code - Código QR del estudiante -->
-            <div id="student-qr" class="hidden">
-                <div class="bg-white rounded-lg shadow overflow-hidden max-w-md mx-auto p-6 text-center">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Mi Código QR</h2>
-                    <p class="text-gray-600 mb-6">Muestra este código al instructor para registrar tu asistencia</p>
-                    
-                    <div class="flex justify-center mb-6">
-                        <div class="border-4 border-red-600 p-4 rounded-lg inline-block">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=NUMA-STUDENT-001" alt="Student QR Code" class="w-48 h-48">
-                        </div>
-                    </div>
-                    
-                    <p class="text-sm text-gray-500 mb-4">Juan Pérez - Cinta Amarilla</p>
-                    
-                    <button id="download-qr" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 inline-flex items-center">
-                        <i class="fas fa-download mr-2"></i> Descargar QR
+                    <h2 class="text-2xl font-bold text-gray-800">Horarios de Clases</h2>
+                    <button id="add-class-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Nueva Clase
                     </button>
                 </div>
+
+                <div class="space-y-4">
+                    <!-- Tarjeta de Clase Infantil -->
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-800">Clase Infantil</h3>
+                                <p class="text-sm text-gray-500">Lunes, Miércoles, Viernes</p>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button class="text-red-600 hover:text-red-800 edit-class-btn"><i class="fas fa-edit"></i></button>
+                                <button class="text-gray-500 hover:text-gray-700"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-200 pt-3 text-sm text-gray-700 space-y-1">
+                            <p><span class="font-semibold">Horario:</span> 4:00 PM - 5:00 PM</p>
+                            <p><span class="font-semibold">Instructor:</span> Sabonim Laura</p>
+                            <p><span class="font-semibold">Alumnos:</span> 12 registrados</p>
+                        </div>
+                    </div>
+                    <!-- Tarjeta de Clase Avanzada -->
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-800">Clase Avanzada</h3>
+                                <p class="text-sm text-gray-500">Martes, Jueves</p>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button class="text-red-600 hover:text-red-800 edit-class-btn"><i class="fas fa-edit"></i></button>
+                                <button class="text-gray-500 hover:text-gray-700"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-200 pt-3 text-sm text-gray-700 space-y-1">
+                           <p><span class="font-semibold">Horario:</span> 6:00 PM - 7:30 PM</p>
+                           <p><span class="font-semibold">Instructor:</span> Sabonim Carlos</p>
+                           <p><span class="font-semibold">Alumnos:</span> 8 registrados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="reports-view" class="hidden p-4">
+                 <h2 class="text-2xl font-bold text-gray-800">Ejercicios</h2>
+            </div>
+
+            <div id="exercises-view" class="hidden p-4">
+                 <h2 class="text-2xl font-bold text-gray-800">Reportes</h2>
+            </div>
+            
+            <div id="my-profile-view" class="hidden p-4">
+                 <h2 class="text-2xl font-bold text-gray-800">Mi Perfil</h2>
+            </div>
+            
+            <div id="my-progress-view" class="hidden p-4">
+                 <h2 class="text-2xl font-bold text-gray-800">Mi Progreso</h2>
             </div>
         </main>
+        
+        <nav class="bottom-nav bg-white border-t border-gray-200 fixed bottom-0 w-full sm:max-w-xl md:max-w-3xl lg:max-w-5xl left-1/2 -translate-x-1/2">
+            <div class="flex justify-around py-2">
+                <div id="admin-nav" class="flex justify-around w-full">
+                    <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full" data-view="students-view">
+                        <i class="fas fa-users text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Alumnos</span>
+                    </button>
+                    <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full" data-view="classes-view">
+                        <i class="fas fa-id-card text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Clases</span>
+                    </button>
+                    <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full active" data-view="qr-scanner-view">
+                        <i class="fas fa-door-open text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Acceso</span>
+                    </button>
+                    <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full" data-view="reports-view">
+                        <i class="fas fa-dumbbell text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Ejercicios</span>
+                    </button>
+                     <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full" data-view="exercises-view">
+                        <i class="fas fa-chart-bar text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Reportes</span>
+                    </button>
+                </div>
+                
+                <div id="student-nav" class="hidden justify-around w-full">
+                    <button class="nav-item" data-view="my-profile-view">
+                        <i class="fas fa-user text-xl mb-1"></i>
+                        <span class="text-xs">Mi Perfil</span>
+                    </button>
+                    <button class="nav-item" data-view="my-progress-view">
+                        <i class="fas fa-chart-line text-xl mb-1"></i>
+                        <span class="text-xs">Mi Progreso</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div id="class-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800" id="class-modal-title">Agregar Nueva Clase</h3>
+                <button id="close-class-modal-btn" class="text-gray-500 hover:text-gray-800">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <form id="class-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="class-name" class="block text-sm font-medium text-gray-700">Nombre de la Clase</label>
+                        <input type="text" id="class-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    <div>
+                        <label for="class-days" class="block text-sm font-medium text-gray-700">Días</label>
+                        <input type="text" id="class-days" placeholder="Ej: Lunes, Miércoles, Viernes" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    <div>
+                        <label for="class-time" class="block text-sm font-medium text-gray-700">Horario</label>
+                        <input type="text" id="class-time" placeholder="Ej: 4:00 PM - 5:00 PM" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    <div>
+                        <label for="class-instructor" class="block text-sm font-medium text-gray-700">Instructor</label>
+                        <input type="text" id="class-instructor" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancel-class-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
+                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="student-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Agregar Nuevo Alumno</h3>
+                <button id="close-student-modal-btn" class="text-gray-500 hover:text-gray-800">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <form id="add-student-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="add-student-name" class="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                        <input type="text" id="add-student-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                     <div>
+                        <label for="add-student-email" class="block text-sm font-medium text-gray-700">Correo</label>
+                        <input type="email" id="add-student-email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                     <div>
+                        <label for="add-student-password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                        <input type="password" id="add-student-password" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    <div>
+                        <label for="add-student-class" class="block text-sm font-medium text-gray-700">Clase</label>
+                        <select id="add-student-class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                            <option>Clase Infantil</option>
+                            <option>Clase Avanzada</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="add-student-gender" class="block text-sm font-medium text-gray-700">Sexo</label>
+                        <select id="add-student-gender" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                            <option>Hombre</option>
+                            <option>Mujer</option>
+                            <option>No binario</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="add-student-birthdate" class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+                            <input type="date" id="add-student-birthdate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        </div>
+                        <div>
+                            <label for="add-student-joindate" class="block text-sm font-medium text-gray-700">Fecha de Ingreso</label>
+                            <input type="date" id="add-student-joindate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        </div>
+                    </div>
+                     <div>
+                        <label for="add-student-tutor" class="block text-sm font-medium text-gray-700">Tutor (Opcional)</label>
+                        <input type="text" id="add-student-tutor" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    <div>
+                        <label for="add-student-phone" class="block text-sm font-medium text-gray-700">Teléfono</label>
+                        <input type="tel" id="add-student-phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    <div class="border-t pt-4">
+                        <label for="add-student-payment" class="block text-sm font-medium text-gray-700">Pago de Mensualidad</label>
+                        <input type="number" id="add-student-payment" placeholder="Ej: 500.00" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    <div>
+                        <label for="add-student-payment-method" class="block text-sm font-medium text-gray-700">Método de Pago</label>
+                        <select id="add-student-payment-method" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                            <option>Efectivo</option>
+                            <option>Transferencia</option>
+                            <option>Tarjeta de Débito</option>
+                            <option>Tarjeta de Crédito</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancel-student-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
+                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Guardar Alumno</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="view-student-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Información del Alumno</h3>
+                <button id="close-view-student-modal-btn" class="text-gray-500 hover:text-gray-800">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div id="view-mode-content">
+                <div class="space-y-3">
+                    <div><p class="text-sm text-gray-500">Nombre Completo</p><p id="view-student-name" class="font-medium text-gray-800"></p></div>
+                    <div><p class="text-sm text-gray-500">Correo</p><p id="view-student-email" class="font-medium text-gray-800"></p></div>
+                    <div><p class="text-sm text-gray-500">Rol</p><p id="view-student-role" class="font-medium text-gray-800"></p></div>
+                    <div><p class="text-sm text-gray-500">Clase</p><p id="view-student-class" class="font-medium text-gray-800"></p></div>
+                    <div><p class="text-sm text-gray-500">Sexo</p><p id="view-student-gender" class="font-medium text-gray-800"></p></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="text-sm text-gray-500">Fecha de Nacimiento</p><p id="view-student-birthdate" class="font-medium text-gray-800"></p></div>
+                        <div><p class="text-sm text-gray-500">Fecha de Ingreso</p><p id="view-student-joindate" class="font-medium text-gray-800"></p></div>
+                    </div>
+                    <div><p class="text-sm text-gray-500">Fecha de Vencimiento</p><p id="view-student-expiration" class="font-medium text-gray-800"></p></div>
+                    <div><p class="text-sm text-gray-500">Estado</p><p id="view-student-status" class="font-medium text-gray-800"></p></div>
+                    <div><p class="text-sm text-gray-500">Tutor</p><p id="view-student-tutor" class="font-medium text-gray-800"></p></div>
+                    <div><p class="text-sm text-gray-500">Teléfono</p><p id="view-student-phone" class="font-medium text-gray-800"></p></div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="edit-student-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Editar</button>
+                </div>
+            </div>
+
+            <form id="edit-mode-form" class="hidden">
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit-student-name" class="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                        <input type="text" id="edit-student-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                    </div>
+                    <div>
+                        <label for="edit-student-email" class="block text-sm font-medium text-gray-700">Correo</label>
+                        <input type="email" id="edit-student-email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                    </div>
+                    <div>
+                        <label for="edit-student-role" class="block text-sm font-medium text-gray-700">Rol</label>
+                        <select id="edit-student-role" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                            <option>Alumno</option>
+                            <option>Instructor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-student-class" class="block text-sm font-medium text-gray-700">Clase</label>
+                        <select id="edit-student-class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                            <option>Clase Infantil</option>
+                            <option>Clase Avanzada</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-student-gender" class="block text-sm font-medium text-gray-700">Sexo</label>
+                        <select id="edit-student-gender" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                            <option>Hombre</option>
+                            <option>Mujer</option>
+                            <option>No binario</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="edit-student-birthdate" class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+                            <input type="date" id="edit-student-birthdate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                        </div>
+                        <div>
+                            <label for="edit-student-joindate" class="block text-sm font-medium text-gray-700">Fecha de Ingreso</label>
+                            <input type="date" id="edit-student-joindate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="edit-student-tutor" class="block text-sm font-medium text-gray-700">Tutor (Opcional)</label>
+                        <input type="text" id="edit-student-tutor" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                    </div>
+                    <div>
+                        <label for="edit-student-phone" class="block text-sm font-medium text-gray-700">Teléfono</label>
+                        <input type="tel" id="edit-student-phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancel-edit-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
+                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
-      
-        // DOM Elements
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        const sidebar = document.querySelector('.sidebar');
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const userProfile = document.getElementById('user-profile');
-        const authContainer = document.getElementById('auth-container');
-        const showSignup = document.getElementById('show-signup');
-        const showLogin = document.getElementById('show-login');
-        const loginForm = document.getElementById('login-form');
-        const signupForm = document.getElementById('signup-form');
-        
-        // Secciones basadas en roles
-        const adminDashboard = document.getElementById('admin-dashboard');
-        const adminStudents = document.getElementById('admin-students');
-        const instructorDashboard = document.getElementById('instructor-dashboard');
-        const instructorAttendance = document.getElementById('instructor-attendance');
-        const studentProfile = document.getElementById('student-profile');
-        const studentQr = document.getElementById('student-qr');
-        
-        // Enlaces de navegación
-        const adminNav = document.getElementById('admin-nav');
-        const instructorNav = document.getElementById('instructor-nav');
-        const studentNav = document.getElementById('student-nav');
-        
-        // Elementos del escáner QR
-        const qrAttendanceBtn = document.getElementById('qr-attendance-btn');
-        const manualAttendanceBtn = document.getElementById('manual-attendance-btn');
-        const manualAttendanceList = document.getElementById('manual-attendance-list');
-        const qrScannerOverlay = document.getElementById('qr-scanner-overlay');
-        const closeScanner = document.getElementById('close-scanner');
-        const qrConfirmation = document.getElementById('qr-confirmation');
-        const qrStudentName = document.getElementById('qr-student-name');
-        const cancelConfirmation = document.getElementById('cancel-confirmation');
-        const confirmAttendance = document.getElementById('confirm-attendance');
-        
-        // Elementos del perfil del estudiante
-        const showQrBtn = document.getElementById('show-qr-btn');
-        const downloadQr = document.getElementById('download-qr');
-        
-        // Simular datos de usuario
-        let currentUser = null;
-        
-        // Activar o desactivar la barra lateral en el móvil
-        sidebarToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-        });
-        
-        // Mostrar formulario de registro
-        showSignup.addEventListener('click', () => {
-            loginForm.classList.add('hidden');
-            signupForm.classList.remove('hidden');
-        });
-        
-        // Mostrar formulario de inicio de sesión
-        showLogin.addEventListener('click', () => {
-            signupForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-        });
-        
-        // Haga clic en el botón Iniciar sesión
-        loginBtn.addEventListener('click', () => {
-            authContainer.classList.remove('hidden');
-            loginBtn.classList.add('hidden');
-        });
-        
-        // Haga clic en el botón Cerrar sesión
-        logoutBtn.addEventListener('click', () => {
-            logout();
-        });
-        
-        // Función de inicio de sesión simulado
-        function login(role) {
-            currentUser = { role: role, name: 'Usuario', email: 'demo@email.com' };
+        document.addEventListener('DOMContentLoaded', function() {
+            let nextStudentId = 1004;
+
+            const successSound = new Audio('Acceso_Concedido.mp3');
+            const errorSound = new Audio('Acceso_Denegado.mp3');
+
+            const mainHeader = document.getElementById('main-header');
+            const scannerMainView = document.getElementById('scanner-main-view');
+            const cameraView = document.getElementById('camera-view');
+            const accessGrantedView = document.getElementById('access-granted-view');
+            const accessDeniedView = document.getElementById('access-denied-view');
+            const scanButton = document.getElementById('scan-button');
+            const accessInput = document.getElementById('access-input');
+            const backToScannerBtn = document.getElementById('back-to-scanner-btn');
+            const backToScannerBtnDenied = document.getElementById('back-to-scanner-btn-denied');
             
-            authContainer.classList.add('hidden');
-            logoutBtn.classList.remove('hidden');
-            userProfile.classList.remove('hidden');
-            document.getElementById('sidebar-toggle').classList.remove('hidden');
-            
-            // Mostrar la navegación apropiada según el rol
-            adminNav.classList.add('hidden');
-            instructorNav.classList.add('hidden');
-            studentNav.classList.add('hidden');
-            
-            // Ocultar todas las secciones de contenido
-            adminDashboard.classList.add('hidden');
-            adminStudents.classList.add('hidden');
-            instructorDashboard.classList.add('hidden');
-            instructorAttendance.classList.add('hidden');
-            studentProfile.classList.add('hidden');
-            studentQr.classList.add('hidden');
-            
-            if (role === 'admin') {
-                adminNav.classList.remove('hidden');
-                adminDashboard.classList.remove('hidden');
-            } else if (role === 'instructor') {
-                instructorNav.classList.remove('hidden');
-                instructorDashboard.classList.remove('hidden');
-            } else if (role === 'student') {
-                studentNav.classList.remove('hidden');
-                studentProfile.classList.remove('hidden');
+            const profileBtn = document.getElementById('profile-btn');
+            const profileDropdown = document.getElementById('profile-dropdown');
+
+            profileBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                profileDropdown.classList.toggle('hidden');
+            });
+
+            window.addEventListener('click', function() {
+                if (!profileDropdown.classList.contains('hidden')) {
+                    profileDropdown.classList.add('hidden');
+                }
+            });
+
+            function processAccess() {
+                // Simula el procesamiento
+                setTimeout(() => {
+                    cameraView.classList.add('hidden');
+                    if (Math.random() > 0.5) {
+                        accessGrantedView.classList.remove('hidden');
+                        if(successSound.readyState >= 2) successSound.play();
+                    } else {
+                        accessDeniedView.classList.remove('hidden');
+                        if(errorSound.readyState >= 2) errorSound.play();
+                    }
+                    accessInput.value = ''; // Limpia el campo
+                }, 2000); // Simula 2 segundos de escaneo
             }
+
+            scanButton.addEventListener('click', function() {
+                scannerMainView.classList.add('hidden');
+                cameraView.classList.remove('hidden');
+                // Aquí iría la lógica para activar la cámara real
+                processAccess();
+            });
+
+            accessInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    processAccess();
+                }
+            });
+
+            function resetToScannerView() {
+                accessGrantedView.classList.add('hidden');
+                accessDeniedView.classList.add('hidden');
+                cameraView.classList.add('hidden');
+                scannerMainView.classList.remove('hidden');
+            }
+            backToScannerBtn.addEventListener('click', resetToScannerView);
+            backToScannerBtnDenied.addEventListener('click', resetToScannerView);
+
+            const allViews = document.querySelectorAll('#main-content > div');
+            const navItems = document.querySelectorAll('.nav-item');
             
-            // Actualizar perfil de usuario
-            document.getElementById('user-name').textContent = currentUser.name;
-        }
-        
-        // Función de cierre de sesión simulado
-        function logout() {
-            currentUser = null;
-            authContainer.classList.remove('hidden');
-            logoutBtn.classList.add('hidden');
-            userProfile.classList.add('hidden');
-            document.getElementById('sidebar-toggle').classList.add('hidden');
-            
-            // Ocultar toda la navegación y el contenido
-            adminNav.classList.add('hidden');
-            instructorNav.classList.add('hidden');
-            studentNav.classList.add('hidden');
-            
-            adminDashboard.classList.add('hidden');
-            adminStudents.classList.add('hidden');
-            instructorDashboard.classList.add('hidden');
-            instructorAttendance.classList.add('hidden');
-            studentProfile.classList.add('hidden');
-            studentQr.classList.add('hidden');
-            
-            // Restablecer el formulario de inicio de sesión
-            signupForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-        }
-        
-        // Envío del formulario de inicio de sesión
-        document.getElementById('login-submit').addEventListener('click', () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            // Validación sencilla
-            if (email && password) {
-                // Detección simulada de roles basada en correo electrónico
-                let role = 'student';
-                if (email.includes('admin')) role = 'admin';
-                else if (email.includes('instructor')) role = 'instructor';
+            function switchView(viewId) {
+                allViews.forEach(view => view.classList.add('hidden'));
+                const activeView = document.getElementById(viewId);
+                if (activeView) activeView.classList.remove('hidden');
+
+                mainHeader.classList.remove('hidden');
+
+                if (viewId === 'qr-scanner-view') {
+                    resetToScannerView();
+                }
                 
-                login(role);
-            } else {
-                alert('Por favor ingresa correo y contraseña');
-            }
-        });
-        
-        // Envío del formulario de registro
-        document.getElementById('signup-submit').addEventListener('click', () => {
-            const name = document.getElementById('signup-name').value;
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const role = document.getElementById('signup-role').value;
-            
-            if (name && email && password) {
-                login(role);
-            } else {
-                alert('Por favor completa todos los campos');
-            }
-        });
-        
-        // Google login
-        document.getElementById('google-login').addEventListener('click', () => {
-            // Mock login as student for demo
-            login('student');
-        });
-        
-        // Enlaces de navegación para administrador
-        document.querySelector('.dashboard-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            adminDashboard.classList.remove('hidden');
-            adminStudents.classList.add('hidden');
-        });
-        
-        document.querySelector('.students-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            adminDashboard.classList.add('hidden');
-            adminStudents.classList.remove('hidden');
-        });
-        
-        // Enlaces de navegación para instructor
-        document.querySelector('.instructor-dashboard-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            instructorDashboard.classList.remove('hidden');
-            instructorAttendance.classList.add('hidden');
-        });
-        
-        document.querySelector('.attendance-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            instructorDashboard.classList.add('hidden');
-            instructorAttendance.classList.remove('hidden');
-            manualAttendanceList.classList.add('hidden');
-        });
-        
-        // Enlaces de navegación para estudiantes.
-        document.querySelector('.profile-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            studentProfile.classList.remove('hidden');
-            studentQr.classList.add('hidden');
-        });
-        
-        document.querySelector('.qr-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            studentProfile.classList.add('hidden');
-            studentQr.classList.remove('hidden');
-        });
-        
-        // Funcionalidad de asistencia QR
-        qrAttendanceBtn.addEventListener('click', () => {
-            manualAttendanceList.classList.add('hidden');
-            qrScannerOverlay.classList.remove('hidden');
-            
-            // En una aplicación real, inicializaríamos el escáner QR aquí
-            // Para la demostración, simularemos el escaneo después de 2 segundos.
-            setTimeout(() => {
-                qrScannerOverlay.classList.add('hidden');
-                qrStudentName.innerHTML = '¿Marcar asistencia para <span class="font-semibold">Juan Pérez</span>?';
-                qrConfirmation.classList.remove('hidden');
-            }, 2000);
-        });
-        
-        manualAttendanceBtn.addEventListener('click', () => {
-            manualAttendanceList.classList.remove('hidden');
-        });
-        
-        closeScanner.addEventListener('click', () => {
-            qrScannerOverlay.classList.add('hidden');
-        });
-        
-        cancelConfirmation.addEventListener('click', () => {
-            qrConfirmation.classList.add('hidden');
-        });
-        
-        confirmAttendance.addEventListener('click', () => {
-            qrConfirmation.classList.add('hidden');
-            alert('Asistencia registrada para Juan Pérez');
-        });
-        
-        // Código QR del estudiante
-        showQrBtn.addEventListener('click', () => {
-            studentProfile.classList.add('hidden');
-            studentQr.classList.remove('hidden');
-        });
-        
-        downloadQr.addEventListener('click', () => {
-            alert('QR descargado (simulado)');
-        });
-        
-        // Initialize charts - Inicializar gráficos
-        function initCharts() {
-            // Belt distribution chart
-            const beltCtx = document.getElementById('beltDistributionChart').getContext('2d');
-            const beltChart = new Chart(beltCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Blanca', 'Amarilla', 'Verde', 'Azul', 'Roja', 'Negra'],
-                    datasets: [{
-                        data: [35, 28, 22, 15, 12, 8],
-                        backgroundColor: [
-                            '#ffffff',
-                            '#ffff00',
-                            '#008000',
-                            '#0000ff',
-                            '#ff0000',
-                            '#000000'
-                        ],
-                        borderColor: '#f3f4f6',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                        }
+                navItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('data-view') === viewId) {
+                        item.classList.add('active');
                     }
-                }
+                });
+            }
+
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const viewId = this.getAttribute('data-view');
+                    switchView(viewId);
+                });
+            });
+
+            const classModal = document.getElementById('class-modal');
+            const addClassBtn = document.getElementById('add-class-btn');
+            const closeClassModalBtn = document.getElementById('close-class-modal-btn');
+            const cancelClassModalBtn = document.getElementById('cancel-class-modal-btn');
+            const editClassBtns = document.querySelectorAll('.edit-class-btn');
+
+            addClassBtn.addEventListener('click', () => {
+                document.getElementById('class-modal-title').textContent = 'Agregar Nueva Clase';
+                document.getElementById('class-form').reset();
+                classModal.classList.remove('hidden');
             });
             
-            // tabla de asistencia
-            const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
-            const attendanceChart = new Chart(attendanceCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Infantiles', 'Adultos', 'Avanzados', 'Competencia', 'Niños', 'Principiantes'],
-                    datasets: [{
-                        label: 'Asistencias',
-                        data: [65, 59, 80, 81, 56, 55],
-                        backgroundColor: '#ef4444',
-                        borderColor: '#dc2626',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-      
-        
- //-------- Inicializar la aplicación addEventListeners ---------------------
-            document.addEventListener('DOMContentLoaded', () => {
-            initCharts();            
+            editClassBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const card = e.target.closest('.rounded-lg');
+                    const name = card.querySelector('h3').textContent;
+                    const days = card.querySelector('p').textContent;
+                    const details = card.querySelectorAll('.border-t p');
+                    const time = details[0].textContent.replace('Horario: ', '');
+                    const instructor = details[1].textContent.replace('Instructor: ', '');
+
+                    document.getElementById('class-modal-title').textContent = 'Editar Clase';
+                    document.getElementById('class-name').value = name;
+                    document.getElementById('class-days').value = days;
+                    document.getElementById('class-time').value = time;
+                    document.getElementById('class-instructor').value = instructor;
                     
-// Para fines de demostración, iniciaremos sesión automáticamente como administrador.
-// login('admin');
-// Para probar otros roles, descomente uno de estos:
-// login('instructor');
-// login('student');
+                    classModal.classList.remove('hidden');
+                });
+            });
+
+            closeClassModalBtn.addEventListener('click', () => classModal.classList.add('hidden'));
+            cancelClassModalBtn.addEventListener('click', () => classModal.classList.add('hidden'));
+
+            const studentModal = document.getElementById('student-modal');
+            const addStudentBtn = document.getElementById('add-student-btn');
+            const closeStudentModalBtn = document.getElementById('close-student-modal-btn');
+            const cancelStudentModalBtn = document.getElementById('cancel-student-modal-btn');
+            const addStudentForm = document.getElementById('add-student-form');
+
+            addStudentBtn.addEventListener('click', () => studentModal.classList.remove('hidden'));
+            closeStudentModalBtn.addEventListener('click', () => studentModal.classList.add('hidden'));
+            cancelStudentModalBtn.addEventListener('click', () => studentModal.classList.add('hidden'));
+
+            addStudentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const studentName = document.getElementById('add-student-name').value;
+                const newRow = document.createElement('tr');
+                newRow.className = 'student-row hover:bg-gray-50';
+                newRow.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${nextStudentId}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">
+                                ${studentName.substring(0, 2).toUpperCase()}
+                            </div>
+                            <span class="text-sm font-medium text-gray-900">${studentName}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activa</span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
+                        <button class="text-red-600 hover:text-red-900"><i class="fas fa-edit"></i></button>
+                        <button class="text-gray-600 hover:text-gray-900"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                document.getElementById('student-table-body').appendChild(newRow);
+                nextStudentId++;
+                addStudentForm.reset();
+                studentModal.classList.add('hidden');
+                alert('Alumno agregado con el ID: ' + (nextStudentId - 1));
+            });
+
+            const viewStudentModal = document.getElementById('view-student-modal');
+            const closeViewStudentModalBtn = document.getElementById('close-view-student-modal-btn');
+            
+            const viewModeContent = document.getElementById('view-mode-content');
+            const editModeForm = document.getElementById('edit-mode-form');
+            const editStudentBtn = document.getElementById('edit-student-btn');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+            const sampleStudentData = {
+                name: "Instructor Mirage Gym",
+                email: "instructor@example.com",
+                role: "Instructor",
+                class: "Clase Avanzada",
+                gender: "Hombre",
+                birthdate: "1990-05-20",
+                joindate: "2022-01-15",
+                expiration: "2025-09-15",
+                status: "Activo",
+                tutor: "N/A",
+                phone: "555-123-4567"
+            };
+
+            function openViewModal(data) {
+                document.getElementById('view-student-name').textContent = data.name;
+                document.getElementById('view-student-email').textContent = data.email;
+                document.getElementById('view-student-role').textContent = data.role;
+                document.getElementById('view-student-class').textContent = data.class;
+                document.getElementById('view-student-gender').textContent = data.gender;
+                document.getElementById('view-student-birthdate').textContent = data.birthdate;
+                document.getElementById('view-student-joindate').textContent = data.joindate;
+                document.getElementById('view-student-expiration').textContent = data.expiration;
+                document.getElementById('view-student-status').textContent = data.status;
+                document.getElementById('view-student-tutor').textContent = data.tutor;
+                document.getElementById('view-student-phone').textContent = data.phone;
+
+                document.getElementById('edit-student-name').value = data.name;
+                document.getElementById('edit-student-email').value = data.email;
+                document.getElementById('edit-student-role').value = data.role;
+                document.getElementById('edit-student-class').value = data.class;
+                document.getElementById('edit-student-gender').value = data.gender;
+                document.getElementById('edit-student-birthdate').value = data.birthdate;
+                document.getElementById('edit-student-joindate').value = data.joindate;
+                document.getElementById('edit-student-tutor').value = data.tutor;
+                document.getElementById('edit-student-phone').value = data.phone;
+
+                viewModeContent.classList.remove('hidden');
+                editModeForm.classList.add('hidden');
+                viewStudentModal.classList.remove('hidden');
+            }
+
+            document.getElementById('student-table-body').addEventListener('click', function(e) {
+                const row = e.target.closest('.student-row');
+                if (row) {
+                    openViewModal(sampleStudentData);
+                }
+            });
+
+            closeViewStudentModalBtn.addEventListener('click', () => {
+                viewStudentModal.classList.add('hidden');
+            });
+            
+            editStudentBtn.addEventListener('click', () => {
+                viewModeContent.classList.add('hidden');
+                editModeForm.classList.remove('hidden');
+            });
+
+            cancelEditBtn.addEventListener('click', () => {
+                editModeForm.classList.add('hidden');
+                viewModeContent.classList.remove('hidden');
+            });
+
+            editModeForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                alert('¡Cambios guardados!');
+                editModeForm.classList.add('hidden');
+                viewModeContent.classList.remove('hidden');
+            });
+
+            const searchInput = document.getElementById('student-search-input');
+            const tableBody = document.getElementById('student-table-body');
+
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const allTableRows = tableBody.getElementsByTagName('tr');
+
+                for (let i = 0; i < allTableRows.length; i++) {
+                    const row = allTableRows[i];
+                    const idCell = row.getElementsByTagName('td')[0];
+                    const nameCell = row.getElementsByTagName('td')[1];
+                    
+                    if (idCell && nameCell) {
+                        const idText = idCell.textContent.toLowerCase();
+                        const nameText = nameCell.textContent.toLowerCase();
+
+                        if (idText.includes(searchTerm) || nameText.includes(searchTerm)) {
+                            row.style.display = "";
+                        } else {
+                            row.style.display = "none";
+                        }
+                    }
+                }
+            });
+
+            switchView('qr-scanner-view');
         });
     </script>
-  
-  
-  
 </body>
 </html>

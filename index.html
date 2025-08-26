@@ -9,6 +9,9 @@
     
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
 
     <link rel="apple-touch-icon" sizes="152x152" href="icon-152x152.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icon-180x180.png">
@@ -176,12 +179,12 @@
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
                     <h2 class="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">Gestión de Alumnos</h2>
                     <div class="flex space-x-2">
-                        <button id="add-student-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center">
+                        <button id="add-student-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center">
                             <i class="fas fa-plus mr-2"></i> Agregar Alumno
                         </button>
-                        <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center">
-                           <i class="fas fa-file-pdf mr-2"></i> Exportar a PDF
-                        </button>
+                        <button id="export-pdf-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center">
+   <i class="fas fa-file-pdf mr-2"></i> Exportar a PDF
+</button>
                     </div>
                 </div>
 
@@ -668,6 +671,7 @@
         let currentEditingClassId = null;
         let allClasses = [];
         let allStudents = [];
+        let currentlyDisplayedStudents = [];
 
         const successSound = new Audio('Acceso_Concedido.mp3');
         const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -1281,7 +1285,7 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
       
         
         
-        // --- Lógica de Modales Ver/Editar Alumno ---
+        // --- Lógica de Modales Ver/Editar/Eliminar Alumno ---
         const viewStudentModal = document.getElementById('view-student-modal');
         const closeViewStudentModalBtn = document.getElementById('close-view-student-modal-btn');
         const studentTableBody = document.getElementById('student-table-body');
@@ -1330,13 +1334,40 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
             }
         }
 
-        studentTableBody.addEventListener('click', function(e) {
-            const row = e.target.closest('.student-row');
-            if (row) {
-                const studentId = row.getAttribute('data-id');
-                openViewModal(studentId);
+        studentTableBody.addEventListener('click', async function(e) {
+    const viewButton = e.target.closest('.student-row');
+    const deleteButton = e.target.closest('.delete-student-row-btn');
+
+    if (deleteButton) {
+        e.stopPropagation(); // Evita que se abra el modal de ver info
+        const studentId = deleteButton.getAttribute('data-id');
+        const studentName = deleteButton.closest('tr').querySelector('.font-medium').textContent;
+
+        if (confirm(`¿Estás seguro de que quieres eliminar a "${studentName}"?\n\nEsta acción no se puede deshacer.`)) {
+            try {
+                // Paso 1: Eliminar el historial de pagos en la subcolección
+                const paymentsRef = collection(db, "students", studentId, "pagos");
+                const paymentsSnapshot = await getDocs(paymentsRef);
+                const deletePromises = [];
+                paymentsSnapshot.forEach((doc) => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+
+                // Paso 2: Eliminar el documento principal del alumno
+                await deleteDoc(doc(db, "students", studentId));
+
+                alert(`Alumno "${studentName}" eliminado con éxito.`);
+            } catch (error) {
+                console.error("Error al eliminar alumno:", error);
+                alert("Hubo un error al intentar eliminar al alumno.");
             }
-        });
+        }
+    } else if (viewButton) {
+        const studentId = viewButton.getAttribute('data-id');
+        openViewModal(studentId);
+    }
+});
 
         closeViewStudentModalBtn.addEventListener('click', () => viewStudentModal.classList.add('hidden'));
 
@@ -1469,6 +1500,7 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
             });
         }
       
+      
         function renderStudentTable(studentsToRender) {
             const studentTableBody = document.getElementById('student-table-body');
             studentTableBody.innerHTML = ''; // Limpiar la tabla antes de dibujar
@@ -1556,47 +1588,114 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
         const sortSelect = document.getElementById('student-sort-select');
 
         function applyFiltersAndSort() {
-            let filteredStudents = [...allStudents];
+    let filteredStudents = [...allStudents];
 
-            // 1. Aplicar filtro de búsqueda
-            const searchTerm = searchInput.value.toLowerCase();
-            if (searchTerm) {
-                filteredStudents = filteredStudents.filter(student => {
-                    const studentName = student.name || student.nombre || '';
-                    const numericId = student.numericId ? student.numericId.toString() : '';
-                    return studentName.toLowerCase().includes(searchTerm) || numericId.includes(searchTerm);
-                });
-            }
+    // 1. Aplicar filtro de búsqueda
+    const searchTerm = searchInput.value.toLowerCase();
+    if (searchTerm) {
+        filteredStudents = filteredStudents.filter(student => {
+            const studentName = student.name || student.nombre || '';
+            const numericId = student.numericId ? student.numericId.toString() : '';
+            return studentName.toLowerCase().includes(searchTerm) || numericId.includes(searchTerm);
+        });
+    }
 
-            // 2. Aplicar ordenamiento
-            const sortBy = sortSelect.value;
-            switch (sortBy) {
-                case 'Ordenar por Nombre (A-Z)':
-                    filteredStudents.sort((a, b) => (a.name || a.nombre).localeCompare(b.name || b.nombre));
-                    break;
-                case 'Ordenar por Nombre (Z-A)':
-                    filteredStudents.sort((a, b) => (b.name || b.nombre).localeCompare(a.name || a.nombre));
-                    break;
-                case 'Ordenar por ID (menor a mayor)':
-                    filteredStudents.sort((a, b) => a.numericId - b.numericId);
-                    break;
-                case 'Ordenar por ID (mayor a menor)':
-                    filteredStudents.sort((a, b) => b.numericId - a.numericId);
-                    break;
-                case 'Ordenar por Alumnos Activos':
-                     filteredStudents.sort((a, b) => b.fechaVencimiento.toDate() - a.fechaVencimiento.toDate());
-                    break;
-                case 'Ordenar por Alumnos Vencidos':
-                     filteredStudents.sort((a, b) => a.fechaVencimiento.toDate() - b.fechaVencimiento.toDate());
-                    break;
-            }
-            
-            // 3. Dibujar la tabla con los resultados
-            renderStudentTable(filteredStudents);
-        }
+    // 2. Aplicar ordenamiento
+    const sortBy = sortSelect.value;
+    switch (sortBy) {
+        case 'Ordenar por Nombre (A-Z)':
+            filteredStudents.sort((a, b) => (a.name || a.nombre).localeCompare(b.name || b.nombre));
+            break;
+        case 'Ordenar por Nombre (Z-A)':
+            filteredStudents.sort((a, b) => (b.name || b.nombre).localeCompare(a.name || a.nombre));
+            break;
+        case 'Ordenar por ID (menor a mayor)':
+            filteredStudents.sort((a, b) => a.numericId - b.numericId);
+            break;
+        case 'Ordenar por ID (mayor a menor)':
+            filteredStudents.sort((a, b) => b.numericId - a.numericId);
+            break;
+        case 'Ordenar por Alumnos Activos':
+             filteredStudents.sort((a, b) => b.fechaVencimiento.toDate() - a.fechaVencimiento.toDate());
+            break;
+        case 'Ordenar por Alumnos Vencidos':
+             filteredStudents.sort((a, b) => a.fechaVencimiento.toDate() - b.fechaVencimiento.toDate());
+            break;
+    }
+    
+    // 3. Dibujar la tabla y guardar la lista actual
+    renderStudentTable(filteredStudents);
+    currentlyDisplayedStudents = filteredStudents; // <-- LÍNEA AÑADIDA
+}
 
         searchInput.addEventListener('input', applyFiltersAndSort);
         sortSelect.addEventListener('change', applyFiltersAndSort);
+      
+      
+      // --- AÑADIR ESTE NUEVO BLOQUE DE CÓDIGO ---
+const exportPdfBtn = document.getElementById('export-pdf-btn');
+exportPdfBtn.addEventListener('click', () => {
+    try {
+        // Verificación de que la librería principal se cargó
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+            alert("Error: La librería principal jsPDF no se ha cargado.");
+            return;
+        }
+
+        // Se eliminó la verificación incorrecta para 'autoTable' de aquí.
+
+        if (!currentlyDisplayedStudents || currentlyDisplayedStudents.length === 0) {
+            alert("No hay alumnos en la lista para exportar.");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const tableColumn = ["ID", "Nombre", "Clase", "Estado", "Vencimiento"];
+        const tableRows = [];
+
+        currentlyDisplayedStudents.forEach(student => {
+            const expirationDate = student.fechaVencimiento.toDate();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const status = expirationDate < today ? "Vencido" : "Activo";
+            const expirationString = expirationDate.toLocaleDateString('es-MX', {
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            });
+
+            const studentData = [
+                student.numericId,
+                student.name,
+                student.clase,
+                status,
+                expirationString
+            ];
+            tableRows.push(studentData);
+        });
+
+        doc.setFontSize(18);
+        doc.text("Lista de Alumnos - NUMA Taekwondo", 14, 22);
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        const dateText = `Generado el: ${new Date().toLocaleString('es-MX')}`;
+        doc.text(dateText, 14, 30);
+
+        // La función autoTable se llama aquí. Si hay un error, el 'catch' lo atrapará.
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 35,
+            theme: 'grid'
+        });
+        
+        doc.save(`lista_alumnos_${new Date().toISOString().slice(0,10)}.pdf`);
+
+    } catch (error) {
+        console.error("Error al generar el PDF:", error);
+        alert("Ocurrió un error al generar el PDF.\n\nError: " + error.message);
+    }
+});
       
         checkLogin();
     </script>

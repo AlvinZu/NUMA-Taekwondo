@@ -621,7 +621,7 @@
 
     <script type="module">
         // Importar funciones de Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { 
             getAuth, 
             onAuthStateChanged, 
@@ -1144,16 +1144,22 @@
     const paymentMethod = document.getElementById('add-student-payment-method').value;
     const gender = document.getElementById('add-student-gender').value;
     const birthdate = document.getElementById('add-student-birthdate').value;
-    const joindate = document.getElementById('add-student-joindate').value;
+    const joindate = document.getElementById('add-student-joindate').value; // <-- Fecha clave
     const tutor = document.getElementById('add-student-tutor').value;
     const phone = document.getElementById('add-student-phone').value;
 
-    if (!name || !email || !password || !studentClass || !paymentAmount) {
-        alert("Por favor, completa todos los campos requeridos, incluyendo el monto del pago.");
+    // --- CAMBIO: Se añade la fecha de ingreso a la validación ---
+    if (!name || !email || !password || !studentClass || !paymentAmount || !joindate) {
+        alert("Por favor, completa todos los campos requeridos, incluyendo la fecha de ingreso.");
         return;
     }
 
+    let tempApp;
     try {
+        const tempAppName = 'userCreationApp_' + Date.now();
+        tempApp = initializeApp(firebaseConfig, tempAppName);
+        const tempAuth = getAuth(tempApp);
+
         const newNumericId = await runTransaction(db, async (transaction) => {
             const counterRef = doc(db, "counters", "studentCounter");
             const counterDoc = await transaction.get(counterRef);
@@ -1163,19 +1169,23 @@
             return newId;
         });
 
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
         const user = userCredential.user;
+        await signOut(tempAuth);
 
-        const expirationDate = new Date();
-        expirationDate.setDate(expirationDate.getDate() + 30);
+        // --- CAMBIO: Se usa la fecha de ingreso para todos los cálculos ---
+        const dateParts = joindate.split('-'); // El formato es 'YYYY-MM-DD'
+        const paymentDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
 
-        // 1. Crear el documento del alumno
+        const expirationDate = new Date(paymentDate); // Se clona la fecha de ingreso/pago
+        expirationDate.setDate(expirationDate.getDate() + 30); // Se le suman 30 días
+
         await setDoc(doc(db, "students", user.uid), {
             numericId: newNumericId,
             name: name,
             email: email,
             clase: studentClass,
-            fechaVencimiento: expirationDate,
+            fechaVencimiento: expirationDate, // <-- Se guarda la nueva fecha de vencimiento
             rol: "student",
             genero: gender,
             fechaNacimiento: birthdate,
@@ -1186,10 +1196,9 @@
             ultimoMetodoPago: paymentMethod
         });
 
-        // 2. Crear el primer registro en la subcolección 'pagos'
         const paymentsCollectionRef = collection(db, "students", user.uid, "pagos");
         await addDoc(paymentsCollectionRef, {
-            fechaPago: new Date(),
+            fechaPago: paymentDate, // <-- Se guarda la fecha de ingreso como la fecha del pago
             monto: parseFloat(paymentAmount),
             metodo: paymentMethod,
             nuevaFechaVencimiento: expirationDate
@@ -1202,6 +1211,10 @@
     } catch (error) {
         console.error("Error al agregar alumno:", error);
         alert(`Error: ${error.message}`);
+    } finally {
+        if (tempApp) {
+            await deleteApp(tempApp);
+        }
     }
 });
       

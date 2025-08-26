@@ -14,7 +14,6 @@
     <link rel="apple-touch-icon" sizes="180x180" href="icon-180x180.png">
     <link rel="apple-touch-icon" sizes="192x192" href="icon-192x192.png">
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512x512.png">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
     <link rel="manifest" href="manifest.json">
   
     <style>
@@ -461,10 +460,21 @@
                         <label for="add-student-phone" class="block text-sm font-medium text-gray-700">Teléfono</label>
                         <input type="tel" id="add-student-phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
                     </div>
-                    <div class="border-t pt-4">
-                        <label for="add-student-payment-date" class="block text-sm font-medium text-gray-700">Fecha de Primer Pago</label>
-                        <input type="date" id="add-student-payment-date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
-                    </div>
+                    <div class="border-t pt-4 space-y-4">
+    <div>
+        <label for="add-student-payment-amount" class="block text-sm font-medium text-gray-700">Pago de la mensualidad</label>
+        <input type="number" id="add-student-payment-amount" placeholder="Ej: 600" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+    </div>
+    <div>
+        <label for="add-student-payment-method" class="block text-sm font-medium text-gray-700">Método de pago</label>
+        <select id="add-student-payment-method" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+            <option>Efectivo</option>
+            <option>Transferencia</option>
+            <option>Tarjeta de Débito</option>
+            <option>Tarjeta de Crédito</option>
+        </select>
+    </div>
+</div>
                 </div>
                 <div class="mt-6 flex justify-end space-x-3">
                     <button type="button" id="cancel-student-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
@@ -498,11 +508,6 @@
                     <div class="border-t pt-3 mt-3">
                         <p class="text-sm text-gray-500">Fecha de Vencimiento</p><p id="view-student-expiration" class="font-medium text-gray-800"></p>
                         <p class="text-sm text-gray-500 mt-2">Estado</p><p id="view-student-status" class="font-medium text-gray-800"></p>
-                    </div>
-                  <div class="border-t pt-3 mt-3">
-                         <button id="show-payment-history-btn" class="w-full bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 transition">
-                            <i class="fas fa-history mr-2"></i>Historial de Pagos
-                        </button>
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end">
@@ -559,12 +564,6 @@
                     <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Guardar Cambios</button>
                 </div>
             </form>
-          <div id="payment-history-view" class="hidden">
-                <div class="space-y-3" id="payment-history-list">
-                    </div>
-                <div class="mt-6 flex justify-end">
-                    <button id="back-to-student-info-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm">Volver</button>
-                </div>
         </div>
     </div>
     
@@ -633,7 +632,9 @@
             query, // <--- FUNCIÓN IMPORTADA
             where, // <--- FUNCIÓN IMPORTADA
             getDocs, // <--- FUNCIÓN IMPORTADA
-            orderBy  // <--- FUNCIÓN IMPORTADA
+            orderBy, // <--- FUNCIÓN IMPORTADA
+            addDoc, // <--- FUNCIÓN IMPORTADA
+            deleteDoc // <--- FUNCIÓN IMPORTADA
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Tu configuración de Firebase
@@ -925,13 +926,14 @@
         scanButton.addEventListener('click', startScanner);
 
         accessInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                const studentId = accessInput.value.trim();
-                if (studentId) {
-                    alert("La búsqueda por ID numérico no está implementada. Por favor, usa el escáner QR.");
-                }
-            }
-        });
+    // Si se presiona la tecla "Enter"
+    if (event.key === 'Enter') {
+        const studentId = accessInput.value.trim(); // Obtiene el ID del campo de texto
+        if (studentId) {
+            processAccess(studentId); // Llama a la función para procesar el acceso con ese ID
+        }
+    }
+});
 
         function resetToScannerView() {
             stopScanner();
@@ -1077,29 +1079,18 @@
             const dateParts = renewalDateValue.split('-');
             const renewalStartDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
 
-            const newExpirationDate = new Date(renewalStartDate);
-            newExpirationDate.setDate(newExpirationDate.getDate() + 30);
+            renewalStartDate.setDate(renewalStartDate.getDate() + 30);
             
             try {
-                // 1. Actualizar la información principal del alumno
                 await updateDoc(studentDocRef, {
                     clase: newClass,
-                    fechaVencimiento: newExpirationDate
-                });
-
-                // 2. Crear un nuevo documento en la subcolección de pagos
-                const paymentsCollectionRef = collection(db, "students", currentScannedStudentId, "payments");
-                await addDoc(paymentsCollectionRef, {
-                    fecha: renewalStartDate, // La fecha en que se pagó
-                    metodo: paymentMethod,
-                    monto: 500, // Puedes cambiar este valor o añadir un campo para él
-                    nuevaFechaVencimiento: newExpirationDate
+                    fechaVencimiento: renewalStartDate
                 });
                 
                 const studentDocSnap = await getDoc(studentDocRef);
                 const student = studentDocSnap.data();
 
-                alert(`Pago registrado para ${student.name} con ${paymentMethod}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.`);
+                alert(`Pago registrado para ${student.name} con ${paymentMethod}.\nNueva fecha de vencimiento: ${formatCustomDate(renewalStartDate)}.`);
                 
                 closePaymentModal();
                 resetToScannerView();
@@ -1121,67 +1112,75 @@
         cancelStudentModalBtn.addEventListener('click', () => studentModal.classList.add('hidden'));
 
         addStudentForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('add-student-name').value;
-            const email = document.getElementById('add-student-email').value;
-            const password = document.getElementById('add-student-password').value;
-            const studentClass = document.getElementById('add-student-class').value;
-            const paymentDate = document.getElementById('add-student-payment-date').value;
-            const gender = document.getElementById('add-student-gender').value;
-            const birthdate = document.getElementById('add-student-birthdate').value;
-            const joindate = document.getElementById('add-student-joindate').value;
-            const tutor = document.getElementById('add-student-tutor').value;
-            const phone = document.getElementById('add-student-phone').value;
+    e.preventDefault();
+    const name = document.getElementById('add-student-name').value;
+    const email = document.getElementById('add-student-email').value;
+    const password = document.getElementById('add-student-password').value;
+    const studentClass = document.getElementById('add-student-class').value;
 
-            if (!name || !email || !password || !studentClass || !paymentDate) {
-                alert("Por favor, completa todos los campos requeridos.");
-                return;
+    // --- CAMBIO: Se leen los nuevos campos de monto y método de pago ---
+    const paymentAmount = document.getElementById('add-student-payment-amount').value;
+    const paymentMethod = document.getElementById('add-student-payment-method').value;
+
+    const gender = document.getElementById('add-student-gender').value;
+    const birthdate = document.getElementById('add-student-birthdate').value;
+    const joindate = document.getElementById('add-student-joindate').value;
+    const tutor = document.getElementById('add-student-tutor').value;
+    const phone = document.getElementById('add-student-phone').value;
+
+    // --- CAMBIO: Se valida el monto en lugar de la fecha ---
+    if (!name || !email || !password || !studentClass || !paymentAmount) {
+        alert("Por favor, completa todos los campos requeridos, incluyendo el monto del pago.");
+        return;
+    }
+
+    try {
+        const newNumericId = await runTransaction(db, async (transaction) => {
+            const counterRef = doc(db, "counters", "studentCounter");
+            const counterDoc = await transaction.get(counterRef);
+
+            if (!counterDoc.exists()) {
+                throw "El documento del contador no existe.";
             }
 
-            try {
-                const newNumericId = await runTransaction(db, async (transaction) => {
-                    const counterRef = doc(db, "counters", "studentCounter");
-                    const counterDoc = await transaction.get(counterRef);
-
-                    if (!counterDoc.exists()) {
-                        throw "El documento del contador no existe.";
-                    }
-
-                    const newId = counterDoc.data().lastId + 1;
-                    transaction.update(counterRef, { lastId: newId });
-                    return newId;
-                });
-
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                const dateParts = paymentDate.split('-');
-                const expirationDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-                expirationDate.setDate(expirationDate.getDate() + 30);
-
-                await setDoc(doc(db, "students", user.uid), {
-                    numericId: newNumericId,
-                    name: name,
-                    email: email,
-                    clase: studentClass,
-                    fechaVencimiento: expirationDate,
-                    rol: "student",
-                    genero: gender,
-                    fechaNacimiento: birthdate,
-                    fechaIngreso: joindate,
-                    tutor: tutor,
-                    telefono: phone
-                });
-
-                alert(`Alumno ${name} agregado con éxito con ID: ${newNumericId}`);
-                addStudentForm.reset();
-                studentModal.classList.add('hidden');
-
-            } catch (error) {
-                console.error("Error al agregar alumno:", error);
-                alert(`Error: ${error.message}`);
-            }
+            const newId = counterDoc.data().lastId + 1;
+            transaction.update(counterRef, { lastId: newId });
+            return newId;
         });
+
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // --- CAMBIO: La fecha de vencimiento ahora se calcula a 30 días a partir de hoy ---
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + 30);
+
+        await setDoc(doc(db, "students", user.uid), {
+            numericId: newNumericId,
+            name: name,
+            email: email,
+            clase: studentClass,
+            fechaVencimiento: expirationDate,
+            rol: "student",
+            genero: gender,
+            fechaNacimiento: birthdate,
+            fechaIngreso: joindate,
+            tutor: tutor,
+            telefono: phone,
+            // --- CAMBIO (Opcional pero recomendado): Guardar la información del primer pago ---
+            ultimoMontoPagado: parseFloat(paymentAmount),
+            ultimoMetodoPago: paymentMethod
+        });
+
+        alert(`Alumno ${name} agregado con éxito con ID: ${newNumericId}`);
+        addStudentForm.reset();
+        studentModal.classList.add('hidden');
+
+    } catch (error) {
+        console.error("Error al agregar alumno:", error);
+        alert(`Error: ${error.message}`);
+    }
+});
 
         function listenForStudentChanges() {
             const studentsCollection = collection(db, "students");
@@ -1206,11 +1205,6 @@
         const editModeForm = document.getElementById('edit-mode-form');
         const editStudentBtn = document.getElementById('edit-student-btn');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
-        const showPaymentHistoryBtn = document.getElementById('show-payment-history-btn');
-        const paymentHistoryView = document.getElementById('payment-history-view');
-        const backToStudentInfoBtn = document.getElementById('back-to-student-info-btn');
-        const modalTitle = document.getElementById('view-student-modal-title');
-
         
         async function openViewModal(studentId) {
             currentViewedStudentId = studentId;
@@ -1247,8 +1241,6 @@
                 viewModeContent.classList.remove('hidden');
                 editModeForm.classList.add('hidden');
                 viewStudentModal.classList.remove('hidden');
-              paymentHistoryView.classList.add('hidden');
-                modalTitle.textContent = "Información del Alumno";
             }
         }
 
@@ -1293,66 +1285,6 @@
                 alert("No se pudieron guardar los cambios.");
             }
         });
-         
-            // Lógica para el historial de pagos
-        function renderPaymentHistory(historyData) {
-            const listContainer = document.getElementById('payment-history-list');
-            listContainer.innerHTML = ''; // Limpiar lista anterior
-
-            if (historyData.length === 0) {
-                listContainer.innerHTML = '<p class="text-gray-500">No hay pagos registrados.</p>';
-                return;
-            }
-
-            historyData.forEach(payment => {
-                const paymentItem = document.createElement('div');
-                paymentItem.className = 'p-3 bg-gray-50 rounded-lg border';
-                paymentItem.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <p class="font-semibold text-gray-800">Pago del ${formatCustomDate(payment.fecha.toDate())}</p>
-                        <p class="text-sm font-bold text-gray-700">$${payment.monto}</p>
-                    </div>
-                    <p class="text-sm text-gray-600">Método: ${payment.metodo}</p>
-                    <p class="text-xs text-gray-500 mt-1">Nuevo Vencimiento: ${formatCustomDate(payment.nuevaFechaVencimiento.toDate())}</p>
-                `;
-                listContainer.appendChild(paymentItem);
-            });
-        }
-
-        showPaymentHistoryBtn.addEventListener('click', async () => {
-            try {
-                // Realizar la consulta a la subcolección de pagos del alumno
-                const paymentsQuery = query(
-                    collection(db, "students", currentViewedStudentId, "payments"),
-                    orderBy("fecha", "desc") // Ordenar los pagos del más reciente al más antiguo
-                );
-                const querySnapshot = await getDocs(paymentsQuery);
-                
-                const paymentHistory = [];
-                querySnapshot.forEach((doc) => {
-                    paymentHistory.push(doc.data());
-                });
-
-                renderPaymentHistory(paymentHistory);
-
-            } catch (error) {
-                console.error("Error al obtener el historial de pagos:", error);
-                // Si hay un error (probablemente por un índice faltante), muéstralo en la consola.
-                // Firebase te dará un enlace para crear el índice necesario.
-                alert("Error al cargar el historial. Revisa la consola para más detalles.");
-            }
-
-            viewModeContent.classList.add('hidden');
-            paymentHistoryView.classList.remove('hidden');
-            modalTitle.textContent = "Historial de Pagos";
-        });
-
-        backToStudentInfoBtn.addEventListener('click', () => {
-            paymentHistoryView.classList.add('hidden');
-            viewModeContent.classList.remove('hidden');
-            modalTitle.textContent = "Información del Alumno";
-        });
-        
 
         // --- Lógica de Modales de Clase ---
         const classModal = document.getElementById('class-modal');
@@ -1581,7 +1513,6 @@
         sortSelect.addEventListener('change', applyFiltersAndSort);
       
         checkLogin();
-      
     </script>
 </body>
 </html>

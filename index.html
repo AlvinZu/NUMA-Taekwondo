@@ -210,6 +210,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cinta</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                             </tr>
@@ -299,6 +300,10 @@
                         <div>
                             <p class="text-sm text-gray-500">Clase</p>
                             <p id="student-profile-class" class="font-medium text-gray-800"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Cinta</p>
+                            <div id="student-profile-belt" class="font-medium text-gray-800"></div>
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Instructor</p>
@@ -434,8 +439,25 @@
                     <div>
                         <label for="add-student-class" class="block text-sm font-medium text-gray-700">Clase</label>
                         <select id="add-student-class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
-                            <option>Clase Infantil</option>
-                            <option>Clase Avanzada</option>
+                            <option value="">Cargando clases...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="add-student-belt" class="block text-sm font-medium text-gray-700">Cinta</label>
+                        <select id="add-student-belt" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                            <option>Blanca</option>
+                            <option>Naranja</option>
+                            <option>Naranja Avanzada</option>
+                            <option>Amarilla</option>
+                            <option>Amarilla Avanzada</option>
+                            <option>Verde</option>
+                            <option>Verde Avanzada</option>
+                            <option>Azul</option>
+                            <option>Azul Avanzada</option>
+                            <option>Roja</option>
+                            <option>Roja 1</option>
+                            <option>Roja 2</option>
+                            <option>Negra</option>
                         </select>
                     </div>
                     <div>
@@ -502,6 +524,7 @@
                     <div><p class="text-sm text-gray-500">Nombre Completo</p><p id="view-student-name" class="font-medium text-gray-800"></p></div>
                     <div><p class="text-sm text-gray-500">Correo</p><p id="view-student-email" class="font-medium text-gray-800"></p></div>
                     <div><p class="text-sm text-gray-500">Clase</p><p id="view-student-class" class="font-medium text-gray-800"></p></div>
+                    <div><p class="text-sm text-gray-500">Cinta</p><p id="view-student-belt" class="font-medium text-gray-800"></p></div>
                     <div><p class="text-sm text-gray-500">Sexo</p><p id="view-student-gender" class="font-medium text-gray-800"></p></div>
                     <div class="grid grid-cols-2 gap-4">
                         <div><p class="text-sm text-gray-500">Fecha de Nacimiento</p><p id="view-student-birthdate" class="font-medium text-gray-800"></p></div>
@@ -541,8 +564,25 @@
                     <div>
                         <label for="edit-student-class" class="block text-sm font-medium text-gray-700">Clase</label>
                         <select id="edit-student-class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
-                            <option>Clase Infantil</option>
-                            <option>Clase Avanzada</option>
+                            <option value="">Cargando clases...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-student-belt" class="block text-sm font-medium text-gray-700">Cinta</label>
+                        <select id="edit-student-belt" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                            <option>Blanca</option>
+                            <option>Naranja</option>
+                            <option>Naranja Avanzada</option>
+                            <option>Amarilla</option>
+                            <option>Amarilla Avanzada</option>
+                            <option>Verde</option>
+                            <option>Verde Avanzada</option>
+                            <option>Azul</option>
+                            <option>Azul Avanzada</option>
+                            <option>Roja</option>
+                            <option>Roja 1</option>
+                            <option>Roja 2</option>
+                            <option>Negra</option>
                         </select>
                     </div>
                     <div>
@@ -665,6 +705,26 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        const beltColors = {
+            'Blanca': '#E8E8E8',
+            'Naranja': '#FFA500',
+            'Naranja Avanzada': '#FF8C00',
+            'Amarilla': '#FFFF00',
+            'Amarilla Avanzada': '#FFD700',
+            'Verde': '#008000',
+            'Verde Avanzada': '#006400',
+            'Azul': '#0000FF',
+            'Azul Avanzada': '#00008B',
+            'Roja': '#FF0000',
+            'Roja 1': '#DC143C',
+            'Roja 2': '#B22222',
+            'Negra': '#000000'
+        };
+
+        function getBeltColor(beltName) {
+            return beltColors[beltName] || '#FFFFFF'; // Default to white if not found
+        }
 
         // --- Variables Globales y Elementos del DOM ---
         let currentScannedStudentId = null;
@@ -918,7 +978,7 @@
         }
         
         function tick() {
-            if (!scanning) return;
+            if (!scanning) return; 
             
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 canvas.height = video.videoHeight;
@@ -998,6 +1058,16 @@
                 document.getElementById('student-profile-email').textContent = student.email;
                 document.getElementById('student-profile-class').textContent = student.clase;
                 document.getElementById('student-initials-avatar').textContent = student.name.substring(0, 2).toUpperCase();
+
+                const beltName = student.cinta || 'N/A';
+                const beltColor = getBeltColor(beltName);
+                const beltDisplay = document.getElementById('student-profile-belt');
+                beltDisplay.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="h-4 w-4 rounded-full mr-2" style="background-color: ${beltColor}; border: 1px solid #ccc;"></span>
+                        <span>${beltName}</span>
+                    </div>
+                `;
 
                 const progressBar = document.getElementById('progress-bar');
                 const daysLeftText = document.getElementById('days-left-text');
@@ -1135,7 +1205,10 @@
         const cancelStudentModalBtn = document.getElementById('cancel-student-modal-btn');
         const addStudentForm = document.getElementById('add-student-form');
 
-        addStudentBtn.addEventListener('click', () => studentModal.classList.remove('hidden'));
+        addStudentBtn.addEventListener('click', () => {
+            populateClassDropdowns(document.getElementById('add-student-class'));
+            studentModal.classList.remove('hidden');
+        });
         closeStudentModalBtn.addEventListener('click', () => studentModal.classList.add('hidden'));
         cancelStudentModalBtn.addEventListener('click', () => studentModal.classList.add('hidden'));
 
@@ -1145,6 +1218,7 @@
     const email = document.getElementById('add-student-email').value;
     const password = document.getElementById('add-student-password').value;
     const studentClass = document.getElementById('add-student-class').value;
+    const belt = document.getElementById('add-student-belt').value;
     const paymentAmount = document.getElementById('add-student-payment-amount').value;
     const paymentMethod = document.getElementById('add-student-payment-method').value;
     const gender = document.getElementById('add-student-gender').value;
@@ -1190,6 +1264,7 @@
             name: name,
             email: email,
             clase: studentClass,
+            cinta: belt,
             fechaVencimiento: expirationDate, // <-- Se guarda la nueva fecha de vencimiento
             rol: "student",
             genero: gender,
@@ -1258,7 +1333,7 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
             paymentElement.className = 'p-2 border-b text-sm';
             paymentElement.innerHTML = `
                 <p><strong>Fecha de Pago:</strong> ${formatCustomDate(paymentDate)}</p>
-                <p><strong>Monto:</strong> $${payment.monto}</p>
+                <p><strong>Monto:</strong> ${payment.monto}</p>
                 <p><strong>Método:</strong> ${payment.metodo}</p>
             `;
             paymentHistoryList.appendChild(paymentElement);
@@ -1270,6 +1345,23 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
     }
 });
       
+
+        function populateClassDropdowns(selectElement, selectedValue) {
+            selectElement.innerHTML = ''; // Clear existing options
+            if (allClasses.length === 0) {
+                selectElement.innerHTML = '<option value="">No hay clases disponibles</option>';
+                return;
+            }
+            allClasses.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls.nombre;
+                option.textContent = cls.nombre;
+                if (cls.nombre === selectedValue) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        }
 
         function listenForStudentChanges() {
             const studentsCollection = collection(db, "students");
@@ -1307,6 +1399,17 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                 document.getElementById('view-student-name').textContent = data.name || 'N/A';
                 document.getElementById('view-student-email').textContent = data.email || 'N/A';
                 document.getElementById('view-student-class').textContent = data.clase || 'N/A';
+                
+                const beltName = data.cinta || 'N/A';
+                const beltColor = getBeltColor(beltName);
+                const beltDisplay = document.getElementById('view-student-belt');
+                beltDisplay.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="h-4 w-4 rounded-full mr-2" style="background-color: ${beltColor}; border: 1px solid #ccc;"></span>
+                        <span>${beltName}</span>
+                    </div>
+                `;
+
                 document.getElementById('view-student-gender').textContent = data.genero || 'N/A';
                 document.getElementById('view-student-birthdate').textContent = data.fechaNacimiento || 'N/A';
                 document.getElementById('view-student-joindate').textContent = data.fechaIngreso || 'N/A';
@@ -1320,7 +1423,8 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                 // Poblar el formulario de edición
                 document.getElementById('edit-student-name').value = data.name || '';
                 document.getElementById('edit-student-email').value = data.email || '';
-                document.getElementById('edit-student-class').value = data.clase || 'Clase Infantil';
+                populateClassDropdowns(document.getElementById('edit-student-class'), data.clase);
+                document.getElementById('edit-student-belt').value = data.cinta || 'Blanca';
                 document.getElementById('edit-student-gender').value = data.genero || 'Hombre';
                 document.getElementById('edit-student-birthdate').value = data.fechaNacimiento || '';
                 document.getElementById('edit-student-joindate').value = data.fechaIngreso || '';
@@ -1390,6 +1494,7 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                 await updateDoc(studentDocRef, {
                     name: document.getElementById('edit-student-name').value,
                     clase: document.getElementById('edit-student-class').value,
+                    cinta: document.getElementById('edit-student-belt').value,
                     genero: document.getElementById('edit-student-gender').value,
                     fechaNacimiento: document.getElementById('edit-student-birthdate').value,
                     fechaIngreso: document.getElementById('edit-student-joindate').value,
@@ -1422,6 +1527,7 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
         classesView.addEventListener('click', async (e) => {
             const editButton = e.target.closest('.edit-class-btn');
             const deleteButton = e.target.closest('.delete-class-btn');
+            const studentCountEl = e.target.closest('.class-student-count');
 
             if (editButton) {
                 const classId = editButton.getAttribute('data-id');
@@ -1453,6 +1559,43 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                         console.error("Error al eliminar la clase:", error);
                         alert("No se pudo eliminar la clase.");
                     }
+                }
+            }
+
+            if (studentCountEl) {
+                const classCard = e.target.closest('[data-class-name]');
+                const className = classCard.dataset.className;
+                const studentListContainer = classCard.querySelector('.student-list-container');
+
+                const isHidden = studentListContainer.classList.toggle('hidden');
+
+                if (!isHidden) {
+                    studentListContainer.innerHTML = '<p class="text-xs text-gray-500">Cargando alumnos...</p>';
+
+                    const studentsInClass = allStudents.filter(student => student.clase === className);
+
+                    if (studentsInClass.length === 0) {
+                        studentListContainer.innerHTML = '<p class="text-xs text-gray-500">No hay alumnos en esta clase.</p>';
+                        return;
+                    }
+
+                    let studentsHtml = '';
+                    studentsInClass.sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabéticamente
+                    
+                    studentsInClass.forEach(student => {
+                        const beltName = student.cinta || 'N/A';
+                        const beltColor = getBeltColor(beltName);
+                        studentsHtml += `
+                            <div class="flex items-center justify-between text-sm p-1 hover:bg-gray-50 rounded">
+                                <span>${student.name}</span>
+                                <div class="flex items-center">
+                                    <span class="h-3 w-3 rounded-full mr-2" style="background-color: ${beltColor}; border: 1px solid #ccc;"></span>
+                                    <span>${beltName}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    studentListContainer.innerHTML = studentsHtml;
                 }
             }
         });
@@ -1522,6 +1665,9 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                 newRow.className = 'student-row hover:bg-gray-50';
                 newRow.setAttribute('data-id', student.id);
                 
+                const beltName = student.cinta || 'N/A';
+                const beltColor = getBeltColor(beltName);
+
                 newRow.innerHTML = `
                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-semibold">${student.numericId || 'N/A'}</td>
                     <td class="px-4 py-3 whitespace-nowrap">
@@ -1530,6 +1676,12 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                                 ${initials}
                             </div>
                             <span class="text-sm font-medium text-gray-900">${studentName}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                        <div class="flex items-center">
+                            <span class="h-3 w-3 rounded-full mr-2" style="background-color: ${beltColor}; border: 1px solid #ccc;"></span>
+                            <span>${beltName}</span>
                         </div>
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap">
@@ -1563,6 +1715,8 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                 const count = studentCounts[clase.nombre] || 0;
                 const classCard = document.createElement('div');
                 classCard.className = 'bg-white rounded-lg shadow p-4';
+                classCard.setAttribute('data-class-name', clase.nombre);
+
                 classCard.innerHTML = `
                     <div class="flex justify-between items-start mb-3">
                         <div>
@@ -1577,7 +1731,12 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                     <div class="border-t border-gray-200 pt-3 text-sm text-gray-700 space-y-1">
                         <p><span class="font-semibold">Horario:</span> ${clase.horario}</p>
                         <p><span class="font-semibold">Instructor:</span> ${clase.instructor}</p>
-                        <p><span class="font-semibold">Alumnos:</span> ${count} registrados</p>
+                        <div class="class-student-count cursor-pointer hover:text-red-600">
+                           <p><span class="font-semibold">Alumnos:</span> ${count} registrados</p>
+                        </div>
+                    </div>
+                    <div class="student-list-container hidden mt-2 pt-2 border-t border-gray-200 space-y-2">
+                        <!-- Student list will be injected here -->
                     </div>
                 `;
                 classesContainer.appendChild(classCard);

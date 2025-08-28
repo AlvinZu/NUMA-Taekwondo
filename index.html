@@ -358,15 +358,51 @@
                     </div>
                  </div>
             </div>
+          
             
             <div id="my-progress-view" class="hidden p-4">
                  <h2 class="text-2xl font-bold text-gray-800">Mi Progreso</h2>
                  </div>
+          
             
             <div id="my-routine-view" class="hidden p-4">
-                 <h2 class="text-2xl font-bold text-gray-800">Mi Rutina</h2>
+                    <h2 class="text-2xl font-bold text-gray-800">Mi Rutina</h2>
+                    <div id="student-routine-container" class="mt-4 space-y-4">
+                        <p class="text-gray-500">Cargando rutina...</p>
+                    </div>
                  </div>
-             </main>
+          <div id="assign-exercises-view" class="hidden p-4 pb-20">
+        <div class="bg-white rounded-2xl shadow-lg p-6 space-y-4">
+          
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Asignar Rutina de Ejercicios</h2>
+            <div class="space-y-4">
+                <div>
+                    <label for="assign-class-select" class="block text-sm font-medium text-gray-700">Seleccionar Clase</label>
+                    <select id="assign-class-select" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+                        <option value="">-- Elija una clase --</option>
+                    </select>
+                </div>
+                <div id="routine-builder-container" class="hidden space-y-4 pt-4 border-t">
+                    <h3 class="text-lg font-semibold text-gray-800">Ejercicios de la Rutina</h3>
+                    <div id="assigned-exercises-list" class="space-y-3">
+                        </div>
+                    <button id="show-exercise-selection-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center justify-center">
+                        <i class="fas fa-plus mr-2"></i> Agregar Ejercicio
+                    </button>
+                    <div class="pt-4 border-t">
+                        <label for="routine-notes" class="block text-sm font-medium text-gray-700">Notas Adicionales para la Clase</label>
+                        <textarea id="routine-notes" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" placeholder="Escriba aquí notas importantes..."></textarea>
+                    </div>
+                    <button id="save-routine-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition">
+                        <i class="fas fa-save mr-2"></i> Guardar Rutina para la Clase
+                    </button>
+                </div>
+            </div>
+        </div>
+          
+          </main> 
+      
+      
         
         <nav class="bottom-nav bg-white border-t border-gray-200 fixed bottom-0 w-full sm:max-w-xl md:max-w-3xl lg:max-w-5xl left-1/2 -translate-x-1/2">
             <div class="flex justify-around pt-2 pb-6 sm:py-2">
@@ -393,21 +429,33 @@
                     </button>
                 </div>
                 
+              
                 <div id="student-nav" class="hidden justify-around w-full">
                     <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full active" data-view="my-profile-view">
                         <i class="fas fa-user text-xl mb-1"></i>
                         <span class="text-xs font-medium">Mi Perfil</span>
                     </button>
-                    <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full" data-view="my-progress-view">
-                        <i class="fas fa-chart-line text-xl mb-1"></i>
-                        <span class="text-xs font-medium">Mi Progreso</span>
-                    </button>
+                    
                      <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full" data-view="my-routine-view">
                         <i class="fas fa-calendar-check text-xl mb-1"></i>
                         <span class="text-xs font-medium">Mi Rutina</span>
                     </button>
-                </div>
+                  
+                  <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full" data-view="my-progress-view">
+                        <i class="fas fa-chart-line text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Mi Progreso</span>
+                    </button>
+                </div>             
+                            
             </div>
+          
+          <div id="trainer-nav" class="hidden justify-around w-full">
+            <div class="flex justify-around pt-2 pb-6 sm:py-2">
+                    <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full active" data-view="assign-exercises-view">
+                        <i class="fas fa-clipboard-list text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Asignar Rutina</span>
+                    </button>
+                </div>
         </nav>
     </div>
 
@@ -787,6 +835,8 @@
         let currentEditingExerciseId = null;
         let allTrainers = [];
         let currentEditingTrainerId = null;
+        let currentSelectedClassForRoutine = null;
+        let routineExercises = []; // Guardará los ejercicios para la rutina actual
 
         const successSound = new Audio('Acceso_Concedido.mp3');
         const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -827,31 +877,61 @@ const exercisesListContainer = document.getElementById('exercises-list-container
  const addTrainerBtn = document.getElementById('add-trainer-btn');
  const trainerForm = document.getElementById('trainer-form');
  const trainerTableBody = document.getElementById('trainer-table-body');
+        const trainerNav = document.getElementById('trainer-nav');
+        const assignExercisesView = document.getElementById('assign-exercises-view');
+        const assignClassSelect = document.getElementById('assign-class-select');
+        const routineBuilderContainer = document.getElementById('routine-builder-container');
+        const showExerciseSelectionModalBtn = document.getElementById('show-exercise-selection-modal-btn');
+        const saveRoutineBtn = document.getElementById('save-routine-btn');
+        const assignedExercisesList = document.getElementById('assigned-exercises-list');
+        const exerciseSelectionModal = document.getElementById('exercise-selection-modal');
+        const closeExerciseSelectionModalBtn = document.getElementById('close-exercise-selection-modal-btn');
+        const exerciseSelectionList = document.getElementById('exercise-selection-list');
+        const studentRoutineContainer = document.getElementById('student-routine-container');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDocRef = doc(db, "students", user.uid);
-                const userDocSnap = await getDoc(userDocRef);
+    if (user) {
+        let userDocSnap;
+        let userRole;
 
-                if (userDocSnap.exists()) {
-                    const userRole = userDocSnap.data().rol;
-                    authContainer.style.display = 'none';
-                    appContainer.style.display = 'flex';
-                    setupUIForRole(userRole, user);
-                } else {
-                    console.error("No se encontró documento para el usuario:", user.uid);
-                    signOut(auth);
-                }
-            } else {
-                appContainer.style.display = 'none';
-                authContainer.style.display = 'block';
-                welcomeScreen.classList.remove('hidden');
-                loginScreen.style.display = 'none';
+        // Intento 1: Buscar en la colección "students"
+        userDocSnap = await getDoc(doc(db, "students", user.uid));
+
+        if (userDocSnap.exists()) {
+            userRole = userDocSnap.data().rol;
+        } else {
+            // Intento 2: Si no se encuentra, buscar en la colección "trainers"
+            userDocSnap = await getDoc(doc(db, "trainers", user.uid));
+            if (userDocSnap.exists()) {
+                userRole = userDocSnap.data().rol; // Busca el rol en el documento del entrenador
             }
-        });
+        }
+
+        // Si se encontró un rol en cualquiera de las dos colecciones, continuar
+        if (userRole) {
+            authContainer.style.display = 'none';
+            appContainer.style.display = 'flex';
+            setupUIForRole(userRole, user);
+        } else {
+            // Si no se encontró en ninguna parte, cerrar sesión
+            console.error("No se encontró documento para el usuario en ninguna colección:", user.uid);
+            signOut(auth);
+        }
+    } else {
+        appContainer.style.display = 'none';
+        authContainer.style.display = 'block';
+        welcomeScreen.classList.remove('hidden');
+        loginScreen.style.display = 'none';
+    }
+});
 
         function setupUIForRole(role, user) {
+          // Ocultar todas las navegaciones primero
+            adminNav.classList.add('hidden');
+            studentNav.classList.add('hidden');
+            trainerNav.classList.add('hidden');
+          
             if (role === 'admin') {
                 adminNav.classList.remove('hidden');
                 adminNav.classList.add('flex');
@@ -887,6 +967,15 @@ const exercisesListContainer = document.getElementById('exercises-list-container
                 
                 switchView('my-profile-view');
                 updateProfileInfo(user.uid); 
+              listenForClassChanges(); // Necesario para obtener datos del instructor
+                listenForRoutineChanges(user.uid); // NUEVO: Escuchar cambios en la rutina
+            } else if (role === 'entrenador') { // NUEVA LÓGICA
+                trainerNav.classList.remove('hidden');
+                trainerNav.classList.add('flex');
+                switchView('assign-exercises-view');
+                listenForClassChanges();
+                listenForExerciseChanges();
+                initializeTrainerDashboard(); // NUEVO: Iniciar la vista del entrenador
             }
         }
 
@@ -1114,13 +1203,15 @@ const exercisesListContainer = document.getElementById('exercises-list-container
         });
 
         async function updateProfileInfo(uid) {
-            const studentDocRef = doc(db, "students", uid);
-            const studentDocSnap = await getDoc(studentDocRef);
+    const studentDocRef = doc(db, "students", uid);
+    const studentDocSnap = await getDoc(studentDocRef);
 
-            if (studentDocSnap.exists()) {
-                const student = studentDocSnap.data();
-              
-              // 1. Buscar el instructor basado en la clase del alumno
+    if (studentDocSnap.exists()) {
+        const student = studentDocSnap.data();
+
+        // --- INICIO DE LAS MODIFICACIONES ---
+
+        // 1. Buscar el instructor basado en la clase del alumno
         const studentClassInfo = allClasses.find(c => c.nombre === student.clase);
         const instructorName = studentClassInfo ? studentClassInfo.instructor : 'No asignado';
         document.getElementById('student-profile-instructor').textContent = instructorName;
@@ -1138,70 +1229,72 @@ const exercisesListContainer = document.getElementById('exercises-list-container
         } else {
             document.getElementById('student-profile-joindate').textContent = 'No especificada';
         }
-              
-                const expirationDate = student.fechaVencimiento.toDate();
 
-                document.getElementById('student-id-text').textContent = student.numericId; 
-                document.getElementById('student-profile-name').textContent = student.name;
-                document.getElementById('student-profile-email').textContent = student.email;
-                document.getElementById('student-profile-class').textContent = student.clase;
-                document.getElementById('student-initials-avatar').textContent = student.name.substring(0, 2).toUpperCase();
+        // --- FIN DE LAS MODIFICACIONES ---
 
-                const beltName = student.cinta || 'N/A';
-                const beltColor = getBeltColor(beltName);
-                const beltDisplay = document.getElementById('student-profile-belt');
-                beltDisplay.innerHTML = `
-                    <div class="flex items-center">
-                        <span class="h-4 w-4 rounded-full mr-2" style="background-color: ${beltColor}; border: 1px solid #ccc;"></span>
-                        <span>${beltName}</span>
-                    </div>
-                `;
+        const expirationDate = student.fechaVencimiento.toDate();
 
-                const progressBar = document.getElementById('progress-bar');
-                const daysLeftText = document.getElementById('days-left-text');
-                const expirationDateText = document.getElementById('expiration-date-text');
-                const studentStatusText = document.getElementById('student-status-text');
-                
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+        document.getElementById('student-id-text').textContent = student.numericId;
+        document.getElementById('student-profile-name').textContent = student.name;
+        document.getElementById('student-profile-email').textContent = student.email;
+        document.getElementById('student-profile-class').textContent = student.clase;       
+        document.getElementById('student-initials-avatar').textContent = student.name.substring(0, 2).toUpperCase();
 
-                const timeDiff = expirationDate.getTime() - today.getTime();
-                const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                
-                const totalDaysInMonth = 30;
-                let progressPercentage = (daysLeft / totalDaysInMonth) * 100;
-                if (progressPercentage < 0) progressPercentage = 0;
-                if (progressPercentage > 100) progressPercentage = 100;
+        const beltName = student.cinta || 'N/A';
+        const beltColor = getBeltColor(beltName);
+        const beltDisplay = document.getElementById('student-profile-belt');
+        beltDisplay.innerHTML = `
+            <div class="flex items-center">
+                <span class="h-4 w-4 rounded-full mr-2" style="background-color: ${beltColor}; border: 1px solid #ccc;"></span>
+                <span>${beltName}</span>
+            </div>
+        `;
 
-                progressBar.style.width = `${progressPercentage}%`;
-                
-                progressBar.classList.remove('bg-green-500', 'bg-yellow-400', 'bg-red-500');
-                daysLeftText.classList.remove('text-green-600', 'text-yellow-600', 'text-red-600');
-                studentStatusText.classList.remove('text-green-600', 'text-red-600');
+        const progressBar = document.getElementById('progress-bar');
+        const daysLeftText = document.getElementById('days-left-text');
+        const expirationDateText = document.getElementById('expiration-date-text');
+        const studentStatusText = document.getElementById('student-status-text');
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-                if (daysLeft > 5) {
-                    progressBar.classList.add('bg-green-500');
-                    daysLeftText.classList.add('text-green-600');
-                    daysLeftText.textContent = `Quedan ${daysLeft} días`;
-                    studentStatusText.textContent = 'Activo';
-                    studentStatusText.classList.add('text-green-600');
-                } else if (daysLeft >= 0 && daysLeft <= 5) {
-                    progressBar.classList.add('bg-yellow-400');
-                    daysLeftText.classList.add('text-yellow-600');
-                    daysLeftText.textContent = daysLeft > 0 ? `Quedan ${daysLeft} días` : 'Vence hoy';
-                    studentStatusText.textContent = 'Activo';
-                    studentStatusText.classList.add('text-green-600');
-                } else {
-                    progressBar.classList.add('bg-red-500');
-                    daysLeftText.classList.add('text-red-600');
-                    studentStatusText.textContent = 'Vencido';
-                    studentStatusText.classList.add('text-red-600');
-                    daysLeftText.textContent = `Vencido hace ${Math.abs(daysLeft)} días`;
-                }
-                
-                expirationDateText.textContent = `Fecha de Vencimiento: ${formatCustomDate(expirationDate)}`;
-            }
+        const timeDiff = expirationDate.getTime() - today.getTime();
+        const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        
+        const totalDaysInMonth = 30;
+        let progressPercentage = (daysLeft / totalDaysInMonth) * 100;
+        if (progressPercentage < 0) progressPercentage = 0;
+        if (progressPercentage > 100) progressPercentage = 100;
+
+        progressBar.style.width = `${progressPercentage}%`;
+        
+        progressBar.classList.remove('bg-green-500', 'bg-yellow-400', 'bg-red-500');
+        daysLeftText.classList.remove('text-green-600', 'text-yellow-600', 'text-red-600');
+        studentStatusText.classList.remove('text-green-600', 'text-red-600');
+
+        if (daysLeft > 5) {
+            progressBar.classList.add('bg-green-500');
+            daysLeftText.classList.add('text-green-600');
+            daysLeftText.textContent = `Quedan ${daysLeft} días`;
+            studentStatusText.textContent = 'Activo';
+            studentStatusText.classList.add('text-green-600');
+        } else if (daysLeft >= 0 && daysLeft <= 5) {
+            progressBar.classList.add('bg-yellow-400');
+            daysLeftText.classList.add('text-yellow-600');
+            daysLeftText.textContent = daysLeft > 0 ? `Quedan ${daysLeft} días` : 'Vence hoy';
+            studentStatusText.textContent = 'Activo';
+            studentStatusText.classList.add('text-green-600');
+        } else {
+            progressBar.classList.add('bg-red-500');
+            daysLeftText.classList.add('text-red-600');
+            studentStatusText.textContent = 'Vencido';
+            studentStatusText.classList.add('text-red-600');
+            daysLeftText.textContent = `Vencido hace ${Math.abs(daysLeft)} días`;
         }
+        
+        expirationDateText.textContent = `Fecha de Vencimiento: ${formatCustomDate(expirationDate)}`;
+    }
+}
         
         // --- Lógica del Modal de Pago ---
         const paymentModal = document.getElementById('payment-modal');
@@ -1510,10 +1603,11 @@ trainerForm.addEventListener('submit', async (e) => {
                 const user = userCredential.user;
                 await signOut(tempAuth);
 
-                // AHORA GUARDA EN LA COLECCIÓN 'trainers' Y SIN EL CAMPO 'rol'
+                // AHORA GUARDA EN LA COLECCIÓN 'trainers' Y CON EL CAMPO 'rol'
                 await setDoc(doc(db, "trainers", user.uid), {
                     name: trainerName,
-                    email: trainerEmail
+                    email: trainerEmail,
+                    rol: 'entrenador' // <-- AÑADIR ESTE CAMPO ES CRUCIAL
                 });
                 alert("Entrenador agregado con éxito.");
             } finally {
@@ -2203,6 +2297,179 @@ exportPdfBtn.addEventListener('click', () => {
     }
 });
       
+      
+      // --- NUEVAS FUNCIONES PARA LA GESTIÓN DE RUTINAS ---
+
+        function initializeTrainerDashboard() {
+            populateClassDropdowns(assignClassSelect);
+            // Cargar rutina existente si se vuelve a seleccionar una clase
+            assignClassSelect.addEventListener('change', async (e) => {
+                currentSelectedClassForRoutine = e.target.value;
+                if (currentSelectedClassForRoutine) {
+                    // Cargar la rutina guardada para esta clase
+                    const routineDocRef = doc(db, "routines", currentSelectedClassForRoutine);
+                    const routineDocSnap = await getDoc(routineDocRef);
+                    if (routineDocSnap.exists()) {
+                        const data = routineDocSnap.data();
+                        routineExercises = data.exercises || [];
+                        document.getElementById('routine-notes').value = data.notes || '';
+                    } else {
+                        routineExercises = [];
+                        document.getElementById('routine-notes').value = '';
+                    }
+                    renderAssignedExercisesList();
+                    routineBuilderContainer.classList.remove('hidden');
+                } else {
+                    routineBuilderContainer.classList.add('hidden');
+                }
+            });
+        }
+        
+        showExerciseSelectionModalBtn.addEventListener('click', () => {
+            renderExerciseSelectionModal();
+            exerciseSelectionModal.classList.remove('hidden');
+        });
+
+        closeExerciseSelectionModalBtn.addEventListener('click', () => {
+            exerciseSelectionModal.classList.add('hidden');
+        });
+        
+        function renderExerciseSelectionModal() {
+            exerciseSelectionList.innerHTML = '';
+            allExercises.forEach(exercise => {
+                // Evitar añadir ejercicios que ya están en la rutina
+                if (!routineExercises.some(re => re.id === exercise.id)) {
+                    const exerciseItem = document.createElement('div');
+                    exerciseItem.className = 'p-3 border rounded-lg hover:bg-gray-100 cursor-pointer';
+                    exerciseItem.textContent = exercise.name;
+                    exerciseItem.setAttribute('data-id', exercise.id);
+                    exerciseItem.setAttribute('data-name', exercise.name);
+                    exerciseSelectionList.appendChild(exerciseItem);
+                }
+            });
+        }
+
+        exerciseSelectionList.addEventListener('click', (e) => {
+            if (e.target.hasAttribute('data-id')) {
+                const newExercise = {
+                    id: e.target.getAttribute('data-id'),
+                    name: e.target.getAttribute('data-name'),
+                    sets: '',
+                    duration: ''
+                };
+                routineExercises.push(newExercise);
+                renderAssignedExercisesList();
+                exerciseSelectionModal.classList.add('hidden');
+            }
+        });
+
+        function renderAssignedExercisesList() {
+            assignedExercisesList.innerHTML = '';
+            if (routineExercises.length === 0) {
+                assignedExercisesList.innerHTML = '<p class="text-center text-gray-500">Aún no se han agregado ejercicios.</p>';
+            }
+            routineExercises.forEach((exercise, index) => {
+                const exerciseCard = document.createElement('div');
+                exerciseCard.className = 'bg-white rounded-lg shadow p-3 flex flex-col sm:flex-row items-center justify-between';
+                exerciseCard.innerHTML = `
+                    <p class="font-semibold text-gray-800 mb-2 sm:mb-0">${exercise.name}</p>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Sets" value="${exercise.sets}" class="w-20 border border-gray-300 rounded-md py-1 px-2 text-sm" data-index="${index}" data-field="sets">
+                        <input type="text" placeholder="Duración" value="${exercise.duration}" class="w-24 border border-gray-300 rounded-md py-1 px-2 text-sm" data-index="${index}" data-field="duration">
+                        <button class="text-red-500 hover:text-red-700 remove-exercise-from-routine-btn" data-index="${index}"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                assignedExercisesList.appendChild(exerciseCard);
+            });
+        }
+        
+        assignedExercisesList.addEventListener('input', (e) => {
+            if (e.target.tagName === 'INPUT') {
+                const index = e.target.getAttribute('data-index');
+                const field = e.target.getAttribute('data-field');
+                routineExercises[index][field] = e.target.value;
+            }
+        });
+
+        assignedExercisesList.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-exercise-from-routine-btn');
+            if (removeBtn) {
+                const index = removeBtn.getAttribute('data-index');
+                routineExercises.splice(index, 1);
+                renderAssignedExercisesList();
+            }
+        });
+
+        saveRoutineBtn.addEventListener('click', async () => {
+            if (!currentSelectedClassForRoutine) {
+                alert("Por favor, selecciona una clase primero.");
+                return;
+            }
+            try {
+                const routineData = {
+                    exercises: routineExercises,
+                    notes: document.getElementById('routine-notes').value,
+                    updatedAt: new Date()
+                };
+                // Usamos el nombre de la clase como ID del documento en la colección 'routines'
+                await setDoc(doc(db, "routines", currentSelectedClassForRoutine), routineData);
+                alert(`Rutina para "${currentSelectedClassForRoutine}" guardada con éxito.`);
+            } catch (error) {
+                console.error("Error al guardar la rutina: ", error);
+                alert("Ocurrió un error al guardar la rutina.");
+            }
+        });
+
+        // --- Lógica para que el alumno vea su rutina ---
+        async function listenForRoutineChanges(studentUid) {
+            const studentDoc = await getDoc(doc(db, "students", studentUid));
+            if (studentDoc.exists()) {
+                const studentData = studentDoc.data();
+                if (studentData.clase) {
+                    const routineDocRef = doc(db, "routines", studentData.clase);
+                    onSnapshot(routineDocRef, (docSnap) => {
+                        renderStudentRoutine(docSnap);
+                    });
+                }
+            }
+        }
+        
+        function renderStudentRoutine(routineDoc) {
+            studentRoutineContainer.innerHTML = '';
+            if (routineDoc.exists()) {
+                const data = routineDoc.data();
+                
+                // Mostrar notas
+                if (data.notes) {
+                    const notesEl = document.createElement('div');
+                    notesEl.className = 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md';
+                    notesEl.innerHTML = `<p class="font-bold">Notas del Entrenador</p><p>${data.notes.replace(/\n/g, '<br>')}</p>`;
+                    studentRoutineContainer.appendChild(notesEl);
+                }
+
+                // Mostrar ejercicios
+                if (data.exercises && data.exercises.length > 0) {
+                    data.exercises.forEach(exercise => {
+                        const exerciseCard = document.createElement('div');
+                        exerciseCard.className = 'bg-white rounded-lg shadow p-4';
+                        exerciseCard.innerHTML = `
+                            <h3 class="font-bold text-lg text-gray-800">${exercise.name}</h3>
+                            <div class="border-t mt-2 pt-2 text-sm text-gray-700 flex justify-around">
+                                <p><span class="font-semibold">Series:</span> ${exercise.sets || 'N/A'}</p>
+                                <p><span class="font-semibold">Duración:</span> ${exercise.duration || 'N/A'}</p>
+                            </div>
+                        `;
+                        studentRoutineContainer.appendChild(exerciseCard);
+                    });
+                } else {
+                     studentRoutineContainer.innerHTML = '<p class="text-gray-500">Tu entrenador aún no ha asignado ejercicios para esta clase.</p>';
+                }
+            } else {
+                studentRoutineContainer.innerHTML = '<p class="text-gray-500">Tu entrenador aún no ha asignado una rutina para tu clase.</p>';
+            }
+        }
+      
+      
         checkLogin();
     </script>
   
@@ -2264,6 +2531,19 @@ exportPdfBtn.addEventListener('click', () => {
         </form>
     </div>
 </div>
+  
+  
+  <div id="exercise-selection-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 slide-in max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">Seleccionar Ejercicios</h3>
+            <button id="close-exercise-selection-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-2xl"></i></button>
+        </div>
+        <div class="flex-grow overflow-y-auto space-y-2" id="exercise-selection-list">
+            </div>
+    </div>
+</div>
+  
   
 </body>
 </html>

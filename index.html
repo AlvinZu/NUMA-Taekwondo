@@ -268,12 +268,21 @@
             </div>
             
             <div id="reports-view" class="hidden p-4">
-                 <h2 class="text-2xl font-bold text-gray-800">Ejercicios</h2>
-            </div>
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Base de Datos de Ejercicios</h2>
+        <button id="add-exercise-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center">
+            <i class="fas fa-plus mr-2"></i> Nuevo Ejercicio
+        </button>
+    </div>
+
+    <div id="exercises-list-container" class="space-y-4">
+        </div>
+</div>
 
             <div id="exercises-view" class="hidden p-4">
                  <h2 class="text-2xl font-bold text-gray-800">Reportes</h2>
             </div>
+          
             <div id="my-profile-view" class="hidden p-6">
                  <h2 class="text-3xl font-bold text-gray-800 mb-6">Mi Perfil</h2>
                  <div class="bg-white rounded-2xl shadow-lg p-6 space-y-4">
@@ -751,6 +760,8 @@
         let allClasses = [];
         let allStudents = [];
         let currentlyDisplayedStudents = [];
+        let allExercises = [];
+        let currentEditingExerciseId = null;
 
         const successSound = new Audio('Acceso_Concedido.mp3');
         const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -779,6 +790,12 @@
         const profileDropdown = document.getElementById('profile-dropdown');
         const adminNav = document.getElementById('admin-nav');
         const studentNav = document.getElementById('student-nav');
+const exerciseModal = document.getElementById('exercise-modal');
+const closeExerciseModalBtn = document.getElementById('close-exercise-modal-btn');
+const cancelExerciseModalBtn = document.getElementById('cancel-exercise-modal-btn');
+const addExerciseBtn = document.getElementById('add-exercise-btn');
+const exerciseForm = document.getElementById('exercise-form');
+const exercisesListContainer = document.getElementById('exercises-list-container');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -811,6 +828,7 @@
                 switchView('qr-scanner-view');
                 listenForStudentChanges();
                 listenForClassChanges();
+                listenForExerciseChanges();
             } else if (role === 'student') {
                 studentNav.classList.remove('hidden');
                 studentNav.classList.add('flex');
@@ -1215,6 +1233,118 @@
         alert("Hubo un error al registrar el pago.");
     }
 });
+      
+    // --- Lógica de Gestión de Ejercicios ---
+    function listenForExerciseChanges() {
+    const exercisesCollection = collection(db, "exercises");
+    const q = query(exercisesCollection, orderBy("name")); // Ordenar por nombre
+    onSnapshot(q, (snapshot) => {
+        allExercises = [];
+        snapshot.forEach((doc) => {
+            allExercises.push({ id: doc.id, ...doc.data() });
+        });
+        renderExercisesView();
+    });
+}
+
+function renderExercisesView() {
+    exercisesListContainer.innerHTML = ''; // Limpiar la lista
+    if (allExercises.length === 0) {
+        exercisesListContainer.innerHTML = '<p class="text-center text-gray-500">Aún no hay ejercicios creados.</p>';
+        return;
+    }
+
+    allExercises.forEach(exercise => {
+        const exerciseCard = document.createElement('div');
+        exerciseCard.className = 'bg-white rounded-lg shadow p-4';
+        exerciseCard.innerHTML = `
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800">${exercise.name}</h3>
+                </div>
+                <div class="flex space-x-3">
+                    <button class="text-red-600 hover:text-red-800 edit-exercise-btn" data-id="${exercise.id}"><i class="fas fa-edit"></i></button>
+                    <button class="text-gray-500 hover:text-gray-700 delete-exercise-btn" data-id="${exercise.id}"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <p class="text-sm text-gray-700">${exercise.description.replace(/\n/g, '<br>')}</p>
+        `;
+        exercisesListContainer.appendChild(exerciseCard);
+    });
+}
+
+// Abrir modal para crear un nuevo ejercicio
+addExerciseBtn.addEventListener('click', () => {
+    currentEditingExerciseId = null;
+    document.getElementById('exercise-modal-title').textContent = 'Agregar Nuevo Ejercicio';
+    exerciseForm.reset();
+    exerciseModal.classList.remove('hidden');
+});
+
+// Cerrar modal
+closeExerciseModalBtn.addEventListener('click', () => exerciseModal.classList.add('hidden'));
+cancelExerciseModalBtn.addEventListener('click', () => exerciseModal.classList.add('hidden'));
+
+// Manejar clics para Editar y Eliminar
+exercisesListContainer.addEventListener('click', async (e) => {
+    const editButton = e.target.closest('.edit-exercise-btn');
+    const deleteButton = e.target.closest('.delete-exercise-btn');
+
+    if (editButton) {
+        const exerciseId = editButton.getAttribute('data-id');
+        currentEditingExerciseId = exerciseId;
+        
+        const exerciseDoc = await getDoc(doc(db, "exercises", exerciseId));
+        if (exerciseDoc.exists()) {
+            const data = exerciseDoc.data();
+            document.getElementById('exercise-modal-title').textContent = 'Editar Ejercicio';
+            document.getElementById('exercise-name').value = data.name;
+            document.getElementById('exercise-description').value = data.description;
+            exerciseModal.classList.remove('hidden');
+        }
+    }
+
+    if (deleteButton) {
+        const exerciseId = deleteButton.getAttribute('data-id');
+        const exerciseName = deleteButton.closest('.bg-white').querySelector('h3').textContent;
+
+        if (confirm(`¿Estás seguro de que quieres eliminar el ejercicio "${exerciseName}"?`)) {
+            try {
+                await deleteDoc(doc(db, "exercises", exerciseId));
+                alert("Ejercicio eliminado con éxito.");
+            } catch (error) {
+                console.error("Error al eliminar el ejercicio:", error);
+                alert("No se pudo eliminar el ejercicio.");
+            }
+        }
+    }
+});
+
+// Guardar (Crear o Actualizar) un ejercicio
+exerciseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const exerciseData = {
+        name: document.getElementById('exercise-name').value,
+        description: document.getElementById('exercise-description').value
+    };
+
+    try {
+        if (currentEditingExerciseId) {
+            // Actualizar ejercicio existente
+            await updateDoc(doc(db, "exercises", currentEditingExerciseId), exerciseData);
+            alert("Ejercicio actualizado con éxito.");
+        } else {
+            // Crear nuevo ejercicio
+            await addDoc(collection(db, "exercises"), exerciseData);
+            alert("Ejercicio agregado con éxito.");
+        }
+        exerciseModal.classList.add('hidden');
+    } catch (error) {
+        console.error("Error al guardar el ejercicio:", error);
+        alert("Ocurrió un error al guardar el ejercicio.");
+    }
+});
+      
 
         // --- Lógica de Gestión de Alumnos ---
         const studentModal = document.getElementById('student-modal');
@@ -1891,5 +2021,34 @@ exportPdfBtn.addEventListener('click', () => {
       
         checkLogin();
     </script>
+  
+  <div id="exercise-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800" id="exercise-modal-title">Agregar Nuevo Ejercicio</h3>
+            <button id="close-exercise-modal-btn" class="text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <form id="exercise-form">
+            <div class="space-y-4">
+                <div>
+                    <label for="exercise-name" class="block text-sm font-medium text-gray-700">Nombre del Ejercicio</label>
+                    <input type="text" id="exercise-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                </div>
+                <div>
+                    <label for="exercise-description" class="block text-sm font-medium text-gray-700">Descripción</label>
+                    <textarea id="exercise-description" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" id="cancel-exercise-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
+                <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Guardar Ejercicio</button>
+            </div>
+        </form>
+    </div>
+</div>
+  
+  
 </body>
 </html>

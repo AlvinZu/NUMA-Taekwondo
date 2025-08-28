@@ -492,6 +492,13 @@
         <input type="number" id="add-student-payment-amount" placeholder="Ej: 600" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
     </div>
     <div>
+        <label for="add-student-inscription-fee" class="block text-sm font-medium text-gray-700">Pago de Inscripción</label>
+        <select id="add-student-inscription-fee" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+            <option value="0">0.00 (Sin inscripción)</option>
+            <option value="250">250.00</option>
+        </select>
+    </div>
+    <div>
         <label for="add-student-payment-method" class="block text-sm font-medium text-gray-700">Método de pago</label>
         <select id="add-student-payment-method" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
             <option>Efectivo</option>
@@ -533,7 +540,14 @@
                     <div><p class="text-sm text-gray-500">Teléfono</p><p id="view-student-phone" class="font-medium text-gray-800"></p></div>
                     <div><p class="text-sm text-gray-500">Tutor</p><p id="view-student-tutor" class="font-medium text-gray-800"></p></div>
                     <div class="border-t pt-3 mt-3">
-                        <p class="text-sm text-gray-500">Fecha de Vencimiento</p><p id="view-student-expiration" class="font-medium text-gray-800"></p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Fecha de Vencimiento</p><p id="view-student-expiration" class="font-medium text-gray-800"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Inscripción Pagada</p><p id="view-student-inscription" class="font-medium text-gray-800"></p>
+                            </div>
+                        </div>
                         <p class="text-sm text-gray-500 mt-2">Estado</p><p id="view-student-status" class="font-medium text-gray-800"></p>
                     </div>
                 </div>
@@ -621,7 +635,7 @@
     </div>
     
     <div id="payment-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 slide-in">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 slide-in max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-gray-800">Renovar Mensualidad</h3>
                 <button id="close-payment-modal-btn" class="text-gray-500 hover:text-gray-800">
@@ -632,6 +646,10 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Alumno</label>
                     <p id="payment-student-name" class="mt-1 text-lg font-semibold text-gray-900"></p>
+                </div>
+                <div>
+                    <label for="renewal-amount-input" class="block text-sm font-medium text-gray-700">Monto de la Mensualidad</label>
+                    <input type="number" id="renewal-amount-input" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100" readonly>
                 </div>
                 <div>
                     <label for="renewal-date-input" class="block text-sm font-medium text-gray-700">Fecha de Renovación</label>
@@ -1125,6 +1143,7 @@
         const changeClassSelect = document.getElementById('change-class-select');
         const paymentMethodSelect = document.getElementById('payment-method-select');
         const renewalDateInput = document.getElementById('renewal-date-input');
+        const renewalAmountInput = document.getElementById('renewal-amount-input');
 
         renewPaymentBtn.addEventListener('click', async () => {
             const studentDocRef = doc(db, "students", currentScannedStudentId);
@@ -1133,6 +1152,7 @@
             if (studentDocSnap.exists()) {
                 const student = studentDocSnap.data();
                 paymentStudentName.textContent = student.name;
+                renewalAmountInput.value = student.ultimoMontoPagado || 600; // Usar monto guardado o un default
                 changeClassSelect.value = student.clase;
                 renewalDateInput.value = new Date().toISOString().split('T')[0];
                 paymentModal.classList.remove('hidden');
@@ -1154,12 +1174,10 @@
     const newClass = changeClassSelect.value;
     const paymentMethod = paymentMethodSelect.value;
     const renewalDateValue = renewalDateInput.value;
+    const paymentAmount = parseFloat(renewalAmountInput.value);
     
-    // Asumimos un monto fijo, pero podrías agregar un input para esto.
-    const paymentAmount = 600; 
-
-    if (!renewalDateValue) {
-        alert("Por favor, selecciona una fecha de renovación.");
+    if (!renewalDateValue || !paymentAmount) {
+        alert("Por favor, completa todos los campos requeridos.");
         return;
     }
 
@@ -1219,7 +1237,8 @@
     const password = document.getElementById('add-student-password').value;
     const studentClass = document.getElementById('add-student-class').value;
     const belt = document.getElementById('add-student-belt').value;
-    const paymentAmount = document.getElementById('add-student-payment-amount').value;
+    const paymentAmount = parseFloat(document.getElementById('add-student-payment-amount').value);
+    const inscriptionFee = parseFloat(document.getElementById('add-student-inscription-fee').value);
     const paymentMethod = document.getElementById('add-student-payment-method').value;
     const gender = document.getElementById('add-student-gender').value;
     const birthdate = document.getElementById('add-student-birthdate').value;
@@ -1227,7 +1246,6 @@
     const tutor = document.getElementById('add-student-tutor').value;
     const phone = document.getElementById('add-student-phone').value;
 
-    // --- CAMBIO: Se añade la fecha de ingreso a la validación ---
     if (!name || !email || !password || !studentClass || !paymentAmount || !joindate) {
         alert("Por favor, completa todos los campos requeridos, incluyendo la fecha de ingreso.");
         return;
@@ -1252,12 +1270,11 @@
         const user = userCredential.user;
         await signOut(tempAuth);
 
-        // --- CAMBIO: Se usa la fecha de ingreso para todos los cálculos ---
-        const dateParts = joindate.split('-'); // El formato es 'YYYY-MM-DD'
+        const dateParts = joindate.split('-');
         const paymentDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
 
-        const expirationDate = new Date(paymentDate); // Se clona la fecha de ingreso/pago
-        expirationDate.setDate(expirationDate.getDate() + 30); // Se le suman 30 días
+        const expirationDate = new Date(paymentDate);
+        expirationDate.setDate(expirationDate.getDate() + 30);
 
         await setDoc(doc(db, "students", user.uid), {
             numericId: newNumericId,
@@ -1265,24 +1282,38 @@
             email: email,
             clase: studentClass,
             cinta: belt,
-            fechaVencimiento: expirationDate, // <-- Se guarda la nueva fecha de vencimiento
+            inscripcion: inscriptionFee,
+            fechaVencimiento: expirationDate,
             rol: "student",
             genero: gender,
             fechaNacimiento: birthdate,
             fechaIngreso: joindate,
             tutor: tutor,
             telefono: phone,
-            ultimoMontoPagado: parseFloat(paymentAmount),
+            ultimoMontoPagado: paymentAmount,
             ultimoMetodoPago: paymentMethod
         });
 
         const paymentsCollectionRef = collection(db, "students", user.uid, "pagos");
+        
+        // Registrar pago de mensualidad
         await addDoc(paymentsCollectionRef, {
-            fechaPago: paymentDate, // <-- Se guarda la fecha de ingreso como la fecha del pago
-            monto: parseFloat(paymentAmount),
+            fechaPago: paymentDate,
+            monto: paymentAmount,
             metodo: paymentMethod,
+            tipo: 'Mensualidad',
             nuevaFechaVencimiento: expirationDate
         });
+
+        // Registrar pago de inscripción si aplica
+        if (inscriptionFee > 0) {
+            await addDoc(paymentsCollectionRef, {
+                fechaPago: paymentDate,
+                monto: inscriptionFee,
+                metodo: paymentMethod,
+                tipo: 'Inscripción'
+            });
+        }
 
         alert(`Alumno ${name} agregado con éxito con ID: ${newNumericId}`);
         addStudentForm.reset();
@@ -1418,6 +1449,7 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                 const expirationDate = data.fechaVencimiento.toDate();
                 const isExpired = expirationDate < new Date();
                 document.getElementById('view-student-expiration').textContent = formatCustomDate(expirationDate);
+                document.getElementById('view-student-inscription').textContent = data.inscripcion ? `${data.inscripcion.toFixed(2)}` : 'No pagada';
                 document.getElementById('view-student-status').textContent = isExpired ? 'Vencido' : 'Activo';
 
                 // Poblar el formulario de edición

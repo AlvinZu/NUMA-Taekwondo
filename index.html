@@ -338,12 +338,12 @@
                             <div id="student-profile-belt" class="font-medium text-gray-800"></div>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-500">Instructor</p>
-                            <p class="font-medium text-gray-800">Sabonim Carlos</p>
+                            <p class="text-sm text-gray-500">Entrenador</p>
+                            <p id="student-profile-instructor" class="font-medium text-gray-800">Sabonim Carlos</p>
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Fecha de Ingreso</p>
-                            <p class="font-medium text-gray-800">15 de Enero, 2023</p>
+                            <p id="student-profile-joindate" class="font-medium text-gray-800">15 de Enero, 2023</p>
                         </div>
                         <div>
                             <div class="flex justify-between items-center mb-1">
@@ -1119,6 +1119,26 @@ const exercisesListContainer = document.getElementById('exercises-list-container
 
             if (studentDocSnap.exists()) {
                 const student = studentDocSnap.data();
+              
+              // 1. Buscar el instructor basado en la clase del alumno
+        const studentClassInfo = allClasses.find(c => c.nombre === student.clase);
+        const instructorName = studentClassInfo ? studentClassInfo.instructor : 'No asignado';
+        document.getElementById('student-profile-instructor').textContent = instructorName;
+
+        // 2. Formatear y mostrar la fecha de ingreso correcta
+        const joinDate = student.fechaIngreso;
+        if (joinDate) {
+            const [year, month, day] = joinDate.split('-');
+            const dateObj = new Date(year, month - 1, day);
+            document.getElementById('student-profile-joindate').textContent = dateObj.toLocaleDateString('es-MX', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        } else {
+            document.getElementById('student-profile-joindate').textContent = 'No especificada';
+        }
+              
                 const expirationDate = student.fechaVencimiento.toDate();
 
                 document.getElementById('student-id-text').textContent = student.numericId; 
@@ -1203,6 +1223,8 @@ const exercisesListContainer = document.getElementById('exercises-list-container
                 const student = studentDocSnap.data();
                 paymentStudentName.textContent = student.name;
                 renewalAmountInput.value = student.ultimoMontoPagado || 600; // Usar monto guardado o un default
+                // Esto cargará las clases de Firestore en el menú desplegable
+        populateClassDropdowns(changeClassSelect, student.clase);
                 changeClassSelect.value = student.clase;
                 renewalDateInput.value = new Date().toISOString().split('T')[0];
                 paymentModal.classList.remove('hidden');

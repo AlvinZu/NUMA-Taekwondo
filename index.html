@@ -121,6 +121,18 @@
                                 <i class="fas fa-sign-out-alt w-5 mr-2"></i>Cerrar Sesión
                             </a>
                         </div>
+                      <div id="notifications-panel" class="hidden absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-md shadow-lg z-50 origin-top-right">
+                            <div class="px-4 py-3 border-b">
+                                <h3 class="text-md font-semibold text-gray-800">Notificaciones</h3>
+                            </div>
+                            <div id="notifications-list" class="py-1 max-h-80 overflow-y-auto">
+                                </div>
+                            <div id="admin-notification-actions" class="hidden p-2 border-t">
+                                <button id="create-notification-btn" class="w-full bg-blue-600 text-white font-bold py-2 rounded-md hover:bg-blue-700 transition text-sm">
+                                    <i class="fas fa-plus-circle mr-2"></i>Nueva Notificación
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -837,6 +849,9 @@
         let currentEditingTrainerId = null;
         let currentSelectedClassForRoutine = null;
         let routineExercises = []; // Guardará los ejercicios para la rutina actual
+        let allNotifications = [];
+        let unreadNotificationsCount = 0;
+        let currentEditingNotificationId = null; // Saber si esta editando o creando
 
         const successSound = new Audio('Acceso_Concedido.mp3');
         const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -888,6 +903,17 @@ const exercisesListContainer = document.getElementById('exercises-list-container
         const closeExerciseSelectionModalBtn = document.getElementById('close-exercise-selection-modal-btn');
         const exerciseSelectionList = document.getElementById('exercise-selection-list');
         const studentRoutineContainer = document.getElementById('student-routine-container');
+const notificationsBtn = document.getElementById('notifications-btn');
+const notificationsPanel = document.getElementById('notifications-panel');
+const notificationsList = document.getElementById('notifications-list');
+const adminNotificationActions = document.getElementById('admin-notification-actions');
+const createNotificationBtn = document.getElementById('create-notification-btn');
+const notificationCreationModal = document.getElementById('notification-creation-modal');
+const closeNotificationModalBtn = document.getElementById('close-notification-modal-btn');
+const notificationForm = document.getElementById('notification-form');
+const viewNotificationModal = document.getElementById('view-notification-modal');
+const closeViewNotificationModalBtn = document.getElementById('close-view-notification-modal-btn');
+const fullNotificationMessage = document.getElementById('full-notification-message');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -941,10 +967,14 @@ const exercisesListContainer = document.getElementById('exercises-list-container
                 listenForClassChanges();
                 listenForExerciseChanges();
                 listenForTrainerChanges();
+                adminNotificationActions.classList.remove('hidden'); // Muestra el botón "Nueva Notificación"
+                listenForNotifications(user.uid, 'admin'); // escucha de notif para admin
             } else if (role === 'student') {
                 studentNav.classList.remove('hidden');
                 studentNav.classList.add('flex');
                 adminNav.classList.add('hidden');
+                adminNotificationActions.classList.add('hidden'); // Oculta el botón
+                listenForNotifications(user.uid, 'student'); // escucha notif para alumno
                 
                 // --- INICIO DE LA MODIFICACIÓN ---
                 // Ahora el QR se genera con el ID Numérico del alumno
@@ -976,6 +1006,8 @@ const exercisesListContainer = document.getElementById('exercises-list-container
                 listenForClassChanges();
                 listenForExerciseChanges();
                 initializeTrainerDashboard(); // NUEVO: Iniciar la vista del entrenador
+                adminNotificationActions.classList.add('hidden');
+                listenForNotifications(user.uid, 'entrenador'); // También puede ver notificaciones
             }
         }
 
@@ -2470,6 +2502,220 @@ exportPdfBtn.addEventListener('click', () => {
         }
       
       
+      // --- NUEVAS FUNCIONES PARA EL SISTEMA DE NOTIFICACIONES ---
+
+        // Abrir/cerrar panel principal de notificaciones
+        notificationsBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            profileDropdown.classList.add('hidden'); // Ocultar el de perfil por si acaso
+            notificationsPanel.classList.toggle('hidden');
+            if (!notificationsPanel.classList.contains('hidden') && unreadNotificationsCount > 0) {
+                markNotificationsAsRead();
+            }
+        });
+
+        // Lógica de clics dentro de la lista de notificaciones (Ver, Editar, Eliminar)
+        notificationsList.addEventListener('click', (e) => {
+            const messageText = e.target.closest('.notification-message-text');
+            const editBtn = e.target.closest('.edit-notification-btn');
+            const deleteBtn = e.target.closest('.delete-notification-btn');
+
+            // Lógica para ver el mensaje completo (Alumnos)
+            if (messageText) {
+                const notificationId = messageText.closest('[data-id]').getAttribute('data-id');
+                const notification = allNotifications.find(n => n.id === notificationId);
+                if (notification) {
+                    fullNotificationMessage.textContent = notification.message;
+                    viewNotificationModal.classList.remove('hidden');
+                }
+            }
+            
+            // Lógica para editar (Admin)
+            if (editBtn) {
+                currentEditingNotificationId = editBtn.getAttribute('data-id');
+                const notification = allNotifications.find(n => n.id === currentEditingNotificationId);
+                if (notification) {
+                    document.getElementById('notification-message').value = notification.message;
+                    notificationCreationModal.querySelector('h3').textContent = "Editar Notificación";
+                    notificationCreationModal.querySelector('button[type="submit"]').textContent = "Guardar Cambios";
+                    notificationCreationModal.classList.remove('hidden');
+                    notificationsPanel.classList.add('hidden');
+                }
+            }
+
+            // Lógica para eliminar (Admin)
+            if (deleteBtn) {
+                const notificationId = deleteBtn.getAttribute('data-id');
+                if (confirm("¿Estás seguro de que quieres eliminar esta notificación?")) {
+                    deleteDoc(doc(db, "notifications", notificationId))
+                        .then(() => alert("Notificación eliminada."))
+                        .catch(err => {
+                            console.error("Error al eliminar:", err);
+                            alert("No se pudo eliminar la notificación.");
+                        });
+                }
+            }
+        });
+        
+        // Cerrar modal de vista completa
+        closeViewNotificationModalBtn.addEventListener('click', () => {
+            viewNotificationModal.classList.add('hidden');
+        });
+
+        // Lógica para abrir el modal de CREACIÓN (resetea el estado de edición)
+        createNotificationBtn.addEventListener('click', () => {
+            currentEditingNotificationId = null; // Importante para diferenciar de una edición
+            notificationForm.reset();
+            notificationCreationModal.querySelector('h3').textContent = "Crear Nueva Notificación";
+            notificationCreationModal.querySelector('button[type="submit"]').textContent = "Enviar Notificación";
+            notificationCreationModal.classList.remove('hidden');
+            notificationsPanel.classList.add('hidden');
+        });
+        
+        // Cerrar modal de creación/edición
+        closeNotificationModalBtn.addEventListener('click', () => {
+            notificationCreationModal.classList.add('hidden');
+        });
+
+        // Enviar o actualizar notificación en Firestore
+        notificationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = document.getElementById('notification-message').value;
+            if (!message.trim()) return;
+
+            try {
+                if (currentEditingNotificationId) {
+                    // Actualizar notificación existente
+                    const notificationRef = doc(db, "notifications", currentEditingNotificationId);
+                    await updateDoc(notificationRef, { message: message });
+                    alert("Notificación actualizada con éxito.");
+                } else {
+                    // Crear nueva notificación
+                    await addDoc(collection(db, "notifications"), {
+                        message: message,
+                        createdAt: new Date(),
+                        sentBy: auth.currentUser.displayName || 'Admin',
+                        readBy: []
+                    });
+                    alert("Notificación enviada a todos los alumnos.");
+                }
+                notificationForm.reset();
+                notificationCreationModal.classList.add('hidden');
+                currentEditingNotificationId = null; // Limpiar estado de edición
+            } catch (error) {
+                console.error("Error al guardar notificación:", error);
+                alert("No se pudo guardar la notificación.");
+            }
+        });
+        
+        // Escuchar cambios en la colección de notificaciones
+        function listenForNotifications(userId, userRole) {
+            const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
+
+            onSnapshot(q, (snapshot) => {
+                allNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                if (userRole === 'student') {
+                    // Contar cuántas no han sido leídas por el alumno actual
+                    unreadNotificationsCount = allNotifications.filter(n => !n.readBy.includes(userId)).length;
+                } else {
+                    // Admins y entrenadores no tienen contador de "no leídas"
+                    unreadNotificationsCount = 0;
+                }
+                
+                updateNotificationUI(userRole);
+            });
+        }
+        
+        // Actualizar la interfaz (el ícono de la campana y la lista)
+        function updateNotificationUI(userRole) {
+            const counter = notificationsBtn.querySelector('span');
+            // Actualizar contador en la campana
+            if (unreadNotificationsCount > 0 && userRole === 'student') {
+                counter.textContent = unreadNotificationsCount;
+                counter.classList.remove('hidden');
+            } else {
+                counter.classList.add('hidden');
+            }
+
+            // Poblar la lista de notificaciones
+            notificationsList.innerHTML = '';
+            if (allNotifications.length === 0) {
+                notificationsList.innerHTML = '<p class="px-4 py-3 text-sm text-gray-500">No hay notificaciones.</p>';
+                return;
+            }
+
+            allNotifications.forEach(n => {
+                const isUnread = unreadNotificationsCount > 0 && !n.readBy.includes(auth.currentUser.uid);
+                const notificationItem = document.createElement('div'); // Cambiado a div para poder contener botones
+                notificationItem.className = `px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b ${isUnread && userRole === 'student' ? 'font-bold' : ''}`;
+                notificationItem.setAttribute('data-id', n.id);
+                
+                const timeAgo = formatTimeAgo(n.createdAt.toDate());
+
+                // Contenido base de la notificación
+                let contentHTML = `
+                    <p class="truncate cursor-pointer notification-message-text">${n.message}</p>
+                    <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
+                `;
+
+                // Añadir botones solo para el admin
+                if (userRole === 'admin') {
+                    contentHTML += `
+                        <div class="flex items-center justify-end space-x-4 mt-2">
+                            <button class="text-blue-600 hover:text-blue-800 edit-notification-btn" data-id="${n.id}"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="text-red-600 hover:text-red-800 delete-notification-btn" data-id="${n.id}"><i class="fas fa-trash"></i> Eliminar</button>
+                        </div>
+                    `;
+                }
+                
+                notificationItem.innerHTML = contentHTML;
+                notificationsList.appendChild(notificationItem);
+            });
+        }
+
+        // Marcar notificaciones como leídas
+        async function markNotificationsAsRead() {
+            const newNotifications = allNotifications.filter(n => !n.readBy.includes(auth.currentUser.uid));
+            
+            const promises = newNotifications.map(n => {
+                const notificationRef = doc(db, "notifications", n.id);
+                // Usamos runTransaction para añadir de forma segura el UID al array 'readBy'
+                return runTransaction(db, async (transaction) => {
+                    const sfDoc = await transaction.get(notificationRef);
+                    if (!sfDoc.exists()) {
+                        throw "Document does not exist!";
+                    }
+                    const newReadBy = [...sfDoc.data().readBy, auth.currentUser.uid];
+                    transaction.update(notificationRef, { readBy: newReadBy });
+                });
+            });
+
+            try {
+                await Promise.all(promises);
+            } catch (error) {
+                console.error("Error al marcar notificaciones como leídas:", error);
+            }
+        }
+
+        // Función para formatear la fecha (ej. "hace 5 minutos")
+        function formatTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return `hace ${Math.floor(interval)} años`;
+            interval = seconds / 2592000;
+            if (interval > 1) return `hace ${Math.floor(interval)} meses`;
+            interval = seconds / 86400;
+            if (interval > 1) return `hace ${Math.floor(interval)} días`;
+            interval = seconds / 3600;
+            if (interval > 1) return `hace ${Math.floor(interval)} horas`;
+            interval = seconds / 60;
+            if (interval > 1) return `hace ${Math.floor(interval)} minutos`;
+            return `hace ${Math.floor(seconds)} segundos`;
+        }
+      
+      
+      
         checkLogin();
     </script>
   
@@ -2543,6 +2789,43 @@ exportPdfBtn.addEventListener('click', () => {
             </div>
     </div>
 </div>
+          
+          <div id="notification-creation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">Crear Nueva Notificación</h3>
+            <button id="close-notification-modal-btn" class="text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <form id="notification-form">
+            <div class="space-y-4">
+                <div>
+                    <label for="notification-message" class="block text-sm font-medium text-gray-700">Mensaje</label>
+                    <textarea id="notification-message" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" placeholder="Escribe tu mensaje para todos los alumnos..." required></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold text-sm">Enviar Notificación</button>
+            </div>
+        </form>
+    </div>
+</div>
+          
+          <div id="view-notification-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">Detalle de la Notificación</h3>
+            <button id="close-view-notification-modal-btn" class="text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <div class="space-y-4 max-h-80 overflow-y-auto">
+            <p id="full-notification-message" class="text-gray-700 whitespace-pre-wrap"></p>
+        </div>
+    </div>
+</div>
+
   
   
 </body>

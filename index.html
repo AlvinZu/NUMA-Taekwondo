@@ -150,6 +150,11 @@
                             <i class="fas fa-qrcode text-2xl"></i>
                         </button>
                     </div>
+                   <div class="max-w-lg mx-auto mt-6 text-center">
+                        <button id="show-history-btn" class="w-full sm:w-auto bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition">
+                            <i class="fas fa-history mr-2"></i>Mostrar Historial del Día
+                        </button>
+                    </div>
                 </div>
 
                 <div id="camera-view" class="hidden w-full max-w-lg mx-auto text-center">
@@ -419,6 +424,12 @@
                             </div>
                             <p id="expiration-date-text" class="text-xs text-gray-400 text-right mt-1"></p>
                         </div>
+                    </div>
+                 </div>
+              <div id="renew-prompt-container" class="hidden mt-6">
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md text-center shadow-md">
+                        <p class="font-bold text-lg">Tu mensualidad ha vencido.</p>
+                        <p class="text-sm mt-1">Por favor, acude a recepción para renovar tu membresía y seguir entrenando.</p>
                     </div>
                  </div>
             </div>
@@ -955,6 +966,7 @@ const exercisesListContainer = document.getElementById('exercises-list-container
         const closeExerciseSelectionModalBtn = document.getElementById('close-exercise-selection-modal-btn');
         const exerciseSelectionList = document.getElementById('exercise-selection-list');
         const studentRoutineContainer = document.getElementById('student-routine-container');
+        const renewPromptContainer = document.getElementById('renew-prompt-container');
 const notificationsBtn = document.getElementById('notifications-btn');
 const notificationsPanel = document.getElementById('notifications-panel');
 const notificationsList = document.getElementById('notifications-list');
@@ -966,6 +978,10 @@ const notificationForm = document.getElementById('notification-form');
 const viewNotificationModal = document.getElementById('view-notification-modal');
 const closeViewNotificationModalBtn = document.getElementById('close-view-notification-modal-btn');
 const fullNotificationMessage = document.getElementById('full-notification-message');
+const showHistoryBtn = document.getElementById('show-history-btn');
+const dailyHistoryModal = document.getElementById('daily-history-modal');
+const closeHistoryModalBtn = document.getElementById('close-history-modal-btn');
+const historyListContainer = document.getElementById('history-list-container');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1134,52 +1150,77 @@ const fullNotificationMessage = document.getElementById('full-notification-messa
             const name = document.getElementById('access-result-student-name');
             const studentIdEl = document.getElementById('access-result-student-id');
             const expirationEl = document.getElementById('access-result-expiration');
-            
+
             card.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500');
             icon.classList.remove('fa-check', 'fa-times', 'fa-exclamation-triangle');
+            
+            // Función para registrar el intento de acceso en Firestore
+            const logAccessAttempt = async (logData) => {
+                try {
+                    await addDoc(collection(db, "access_logs"), {
+                        ...logData,
+                        timestamp: new Date() // Usamos la fecha actual
+                    });
+                } catch (error) {
+                    console.error("Error al registrar el acceso:", error);
+                }
+            };
 
             try {
-                // --- LÓGICA CORREGIDA ---
-                // Se busca al alumno por su 'numericId'
                 const studentsRef = collection(db, "students");
                 const q = query(studentsRef, where("numericId", "==", parseInt(id)));
                 const querySnapshot = await getDocs(q);
 
                 if (!querySnapshot.empty) {
                     const studentDoc = querySnapshot.docs[0];
-                    currentScannedStudentId = studentDoc.id; // Guardar el UID real para futuras operaciones
+                    currentScannedStudentId = studentDoc.id;
                     const student = studentDoc.data();
+                    
                     const expirationDate = student.fechaVencimiento.toDate();
-
+                    // --- MODIFICACIÓN CLAVE: Normalizamos las fechas a medianoche para una comparación precisa ---
+                    expirationDate.setHours(0, 0, 0, 0); 
+                    
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    const timeDiff = expirationDate.getTime() - today.getTime();
-                    const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                    
+
                     studentIdEl.textContent = student.numericId;
                     expirationEl.textContent = formatCustomDate(expirationDate);
 
-                    if (daysLeft > 5) {
-                        card.classList.add('bg-green-500');
-                        icon.classList.add('fa-check');
-                        title.textContent = "Acceso Concedido";
-                        name.textContent = `Bienvenido, ${student.name}`;
-                        successSound.play();
-                    } else if (daysLeft >= 0 && daysLeft <= 5) {
-                        card.classList.add('bg-yellow-500');
-                        icon.classList.add('fa-exclamation-triangle');
-                        title.textContent = "Acceso Concedido";
-                        name.textContent = `${student.name}, tu pago está por vencer.`;
-                        successSound.play();
-                    } else {
+                    // --- LÓGICA DE ACCESO CORREGIDA ---
+                    if (expirationDate < today) {
+                        // ACCESO DENEGADO (VENCIDO)
                         card.classList.add('bg-red-500');
                         icon.classList.add('fa-times');
                         title.textContent = "Acceso Denegado";
                         name.textContent = student.name;
                         expirationEl.textContent = `Vencido desde ${formatCustomDate(expirationDate)}`;
                         errorSound.play();
+                        logAccessAttempt({ studentId: student.numericId, studentName: student.name, status: 'Denegado', reason: 'Pago vencido' });
+                    } else {
+                        // ACCESO CONCEDIDO (Puede tener advertencia)
+                        const timeDiff = expirationDate.getTime() - today.getTime();
+                        const daysLeft = Math.round(timeDiff / (1000 * 3600 * 24));
+                        
+                        if (daysLeft <= 5) {
+                            // AMARILLO (Advertencia, por vencer)
+                            card.classList.add('bg-yellow-500');
+                            icon.classList.add('fa-exclamation-triangle');
+                            title.textContent = "Acceso Concedido";
+                            name.textContent = `${student.name}, tu pago está por vencer.`;
+                            successSound.play();
+                            logAccessAttempt({ studentId: student.numericId, studentName: student.name, status: 'Concedido', reason: 'Pago por vencer' });
+                        } else {
+                            // VERDE (Normal)
+                            card.classList.add('bg-green-500');
+                            icon.classList.add('fa-check');
+                            title.textContent = "Acceso Concedido";
+                            name.textContent = `Bienvenido, ${student.name}`;
+                            successSound.play();
+                            logAccessAttempt({ studentId: student.numericId, studentName: student.name, status: 'Concedido', reason: 'Pago al corriente' });
+                        }
                     }
                 } else {
+                    // ACCESO DENEGADO (ID NO ENCONTRADO)
                     currentScannedStudentId = null;
                     card.classList.add('bg-red-500');
                     icon.classList.add('fa-times');
@@ -1188,12 +1229,12 @@ const fullNotificationMessage = document.getElementById('full-notification-messa
                     studentIdEl.textContent = id;
                     expirationEl.textContent = 'N/A';
                     errorSound.play();
+                    logAccessAttempt({ studentId: id, studentName: 'Desconocido', status: 'Denegado', reason: 'ID no encontrado' });
                 }
             } catch (error) {
                 console.error("Error al procesar el acceso:", error);
-                alert("Ocurrió un error al consultar la base de datos. Asegúrate de que el índice de Firestore se haya creado correctamente.");
-                resetToScannerView(); // Volver al escáner si hay un error
-                return; // Detener la ejecución
+                resetToScannerView();
+                return;
             }
             
             accessResultView.classList.remove('hidden');
@@ -1299,35 +1340,27 @@ const fullNotificationMessage = document.getElementById('full-notification-messa
     if (studentDocSnap.exists()) {
         const student = studentDocSnap.data();
 
-        // --- INICIO DE LAS MODIFICACIONES ---
-
-        // 1. Buscar el instructor basado en la clase del alumno
+        // --- Lógica para instructor y fecha de ingreso (ya funciona bien) ---
         const studentClassInfo = allClasses.find(c => c.nombre === student.clase);
         const instructorName = studentClassInfo ? studentClassInfo.instructor : 'No asignado';
         document.getElementById('student-profile-instructor').textContent = instructorName;
 
-        // 2. Formatear y mostrar la fecha de ingreso correcta
         const joinDate = student.fechaIngreso;
         if (joinDate) {
             const [year, month, day] = joinDate.split('-');
             const dateObj = new Date(year, month - 1, day);
             document.getElementById('student-profile-joindate').textContent = dateObj.toLocaleDateString('es-MX', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
+                day: 'numeric', month: 'long', year: 'numeric'
             });
         } else {
             document.getElementById('student-profile-joindate').textContent = 'No especificada';
         }
 
-        // --- FIN DE LAS MODIFICACIONES ---
-
-        const expirationDate = student.fechaVencimiento.toDate();
-
+        // --- Llenado de datos básicos (sin cambios) ---
         document.getElementById('student-id-text').textContent = student.numericId;
         document.getElementById('student-profile-name').textContent = student.name;
         document.getElementById('student-profile-email').textContent = student.email;
-        document.getElementById('student-profile-class').textContent = student.clase;       
+        document.getElementById('student-profile-class').textContent = student.clase;
         document.getElementById('student-initials-avatar').textContent = student.name.substring(0, 2).toUpperCase();
 
         const beltName = student.cinta || 'N/A';
@@ -1344,45 +1377,54 @@ const fullNotificationMessage = document.getElementById('full-notification-messa
         const daysLeftText = document.getElementById('days-left-text');
         const expirationDateText = document.getElementById('expiration-date-text');
         const studentStatusText = document.getElementById('student-status-text');
+        const renewPrompt = document.getElementById('renew-prompt-container');
         
+        // --- INICIO DE LA LÓGICA CORREGIDA PARA FECHAS ---
+        const expirationDate = student.fechaVencimiento.toDate();
+        expirationDate.setHours(0, 0, 0, 0); // Normalizar la fecha de vencimiento a la medianoche
+
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0); // Normalizar la fecha de hoy a la medianoche
 
         const timeDiff = expirationDate.getTime() - today.getTime();
-        const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        const daysLeft = Math.round(timeDiff / (1000 * 3600 * 24)); // Usar Math.round para mayor precisión
         
         const totalDaysInMonth = 30;
-        let progressPercentage = (daysLeft / totalDaysInMonth) * 100;
+        let progressPercentage = ((daysLeft + 1) / totalDaysInMonth) * 100; // Se suma 1 para que el día de vencimiento no sea 0%
         if (progressPercentage < 0) progressPercentage = 0;
         if (progressPercentage > 100) progressPercentage = 100;
 
         progressBar.style.width = `${progressPercentage}%`;
         
+        // Limpiar clases de estilo previas
         progressBar.classList.remove('bg-green-500', 'bg-yellow-400', 'bg-red-500');
         daysLeftText.classList.remove('text-green-600', 'text-yellow-600', 'text-red-600');
         studentStatusText.classList.remove('text-green-600', 'text-red-600');
+        renewPrompt.classList.add('hidden'); // Ocultar el aviso por defecto
 
-        if (daysLeft > 5) {
+        if (daysLeft >= 6) { // Activo (más de 5 días restantes)
             progressBar.classList.add('bg-green-500');
             daysLeftText.classList.add('text-green-600');
             daysLeftText.textContent = `Quedan ${daysLeft} días`;
             studentStatusText.textContent = 'Activo';
             studentStatusText.classList.add('text-green-600');
-        } else if (daysLeft >= 0 && daysLeft <= 5) {
+        } else if (daysLeft >= 0 && daysLeft <= 5) { // Por vencer (entre 0 y 5 días)
             progressBar.classList.add('bg-yellow-400');
             daysLeftText.classList.add('text-yellow-600');
             daysLeftText.textContent = daysLeft > 0 ? `Quedan ${daysLeft} días` : 'Vence hoy';
             studentStatusText.textContent = 'Activo';
             studentStatusText.classList.add('text-green-600');
-        } else {
+        } else { // Vencido (días restantes negativos)
             progressBar.classList.add('bg-red-500');
             daysLeftText.classList.add('text-red-600');
             studentStatusText.textContent = 'Vencido';
             studentStatusText.classList.add('text-red-600');
             daysLeftText.textContent = `Vencido hace ${Math.abs(daysLeft)} días`;
+            renewPrompt.classList.remove('hidden'); // Mostrar el aviso de renovación
         }
         
         expirationDateText.textContent = `Fecha de Vencimiento: ${formatCustomDate(expirationDate)}`;
+        // --- FIN DE LA LÓGICA CORREGIDA ---
     }
 }
         
@@ -2946,6 +2988,66 @@ exportPdfBtn.addEventListener('click', () => {
         }
       
       
+      // --- NUEVAS FUNCIONES PARA EL HISTORIAL DE ACCESOS ---
+
+        showHistoryBtn.addEventListener('click', () => {
+            showDailyHistory();
+        });
+
+        closeHistoryModalBtn.addEventListener('click', () => {
+            dailyHistoryModal.classList.add('hidden');
+        });
+
+        async function showDailyHistory() {
+            historyListContainer.innerHTML = '<p class="text-gray-500">Cargando historial...</p>';
+            dailyHistoryModal.classList.remove('hidden');
+
+            const today = new Date();
+            const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+            const logsRef = collection(db, "access_logs");
+            const q = query(logsRef, 
+                where("timestamp", ">=", startOfDay), 
+                where("timestamp", "<", endOfDay), 
+                orderBy("timestamp", "desc")
+            );
+            
+            try {
+                const querySnapshot = await getDocs(q);
+                if (querySnapshot.empty) {
+                    historyListContainer.innerHTML = '<p class="text-center text-gray-600 font-medium">No hay registros de acceso el día de hoy.</p>';
+                    return;
+                }
+
+                historyListContainer.innerHTML = ''; // Limpiar
+                querySnapshot.forEach(doc => {
+                    const log = doc.data();
+                    const logTime = log.timestamp.toDate().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                    const statusColor = log.status === 'Concedido' ? 'text-green-600' : 'text-red-600';
+                    const statusIcon = log.status === 'Concedido' ? 'fa-check-circle' : 'fa-times-circle';
+
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'p-3 border rounded-lg flex items-center justify-between';
+                    logEntry.innerHTML = `
+                        <div>
+                            <p class="font-bold">${log.studentName} <span class="text-sm font-normal text-gray-500">(ID: ${log.studentId})</span></p>
+                            <p class="text-sm text-gray-600">${log.reason}</p>
+                        </div>
+                        <div class="text-right">
+                             <p class="font-semibold ${statusColor}"><i class="fas ${statusIcon} mr-1"></i>${log.status}</p>
+                             <p class="text-xs text-gray-400">${logTime}</p>
+                        </div>
+                    `;
+                    historyListContainer.appendChild(logEntry);
+                });
+            } catch (error) {
+                console.error("Error al obtener historial:", error);
+                historyListContainer.innerHTML = '<p class="text-red-500">No se pudo cargar el historial.</p>';
+            }
+        }
+      
+      
       
         checkLogin();
     </script>
@@ -3054,6 +3156,20 @@ exportPdfBtn.addEventListener('click', () => {
         <div class="space-y-4 max-h-80 overflow-y-auto">
             <p id="full-notification-message" class="text-gray-700 whitespace-pre-wrap"></p>
         </div>
+    </div>
+</div>
+          
+          
+          <div id="daily-history-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 slide-in max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 class="text-xl font-bold text-gray-800">Historial de Accesos de Hoy</h3>
+            <button id="close-history-modal-btn" class="text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <div id="history-list-container" class="flex-grow overflow-y-auto space-y-2">
+            </div>
     </div>
 </div>
 

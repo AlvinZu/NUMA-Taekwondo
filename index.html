@@ -113,6 +113,8 @@
                         <i class="far fa-bell text-xl"></i>
                         <span class="absolute -top-1 -right-1 bg-yellow-400 text-black text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
                     </button>
+                    <button id="pos-nav-btn" class="hidden"> <i class="fas fa-cash-register text-xl"></i>
+    </button>
                     <div class="relative">
                         <button id="profile-btn">
                             <i class="far fa-user-circle text-xl"></i>
@@ -193,6 +195,44 @@
                     </div>
                 </div>
             </div>
+          
+          <div id="pos-view" class="hidden p-4 sm:p-6 pb-20">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">Punto de Venta y Gestión</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <button id="new-sale-btn" class="bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 transition flex items-center justify-center space-x-2">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Registrar Venta</span>
+            </button>
+            <button id="new-expense-btn" class="bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 transition flex items-center justify-center space-x-2">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Registrar Gasto</span>
+            </button>
+            <button id="add-product-btn-pos" class="bg-blue-500 text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition flex items-center justify-center space-x-2">
+                <i class="fas fa-box-open"></i>
+                <span>Agregar Producto</span>
+            </button>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Inventario de Productos</h3>
+            <div id="inventory-list-container" class="space-y-3 max-h-96 overflow-y-auto">
+                </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Ventas Recientes</h3>
+                <div id="recent-sales-container" class="space-y-3">
+                    </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Gastos Recientes</h3>
+                <div id="recent-expenses-container" class="space-y-3">
+                    </div>
+            </div>
+        </div>
+    </div>
             
             <div id="students-view" class="hidden p-4">
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
@@ -1009,6 +1049,7 @@ const showHistoryBtn = document.getElementById('show-history-btn');
 const dailyHistoryModal = document.getElementById('daily-history-modal');
 const closeHistoryModalBtn = document.getElementById('close-history-modal-btn');
 const historyListContainer = document.getElementById('history-list-container');
+const posNavBtn = document.getElementById('pos-nav-btn');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1052,11 +1093,13 @@ const historyListContainer = document.getElementById('history-list-container');
             adminNav.classList.add('hidden');
             studentNav.classList.add('hidden');
             trainerNav.classList.add('hidden');
+            const posNavBtn = document.getElementById('pos-nav-btn'); // <-- Obtener el botón
           
             if (role === 'admin') {
                 adminNav.classList.remove('hidden');
                 adminNav.classList.add('flex');
                 studentNav.classList.add('hidden');
+                posNavBtn.classList.remove('hidden'); 
                 switchView('qr-scanner-view');
                 listenForStudentChanges();
                 listenForClassChanges();
@@ -1068,6 +1111,7 @@ const historyListContainer = document.getElementById('history-list-container');
                 studentNav.classList.remove('hidden');
                 studentNav.classList.add('flex');
                 adminNav.classList.add('hidden');
+                posNavBtn.classList.add('hidden');
                 adminNotificationActions.classList.add('hidden'); // Oculta el botón
                 listenForNotifications(user.uid, 'student'); // escucha notif para alumno
                 
@@ -1098,6 +1142,7 @@ const historyListContainer = document.getElementById('history-list-container');
             } else if (role === 'entrenador') { // NUEVA LÓGICA
                 trainerNav.classList.remove('hidden');
                 trainerNav.classList.add('flex');
+                posNavBtn.classList.add('hidden');
                 switchView('assign-exercises-view');
                 listenForClassChanges();
                 listenForExerciseChanges();
@@ -1341,6 +1386,12 @@ const historyListContainer = document.getElementById('history-list-container');
             if (viewId === 'qr-scanner-view') {
                 resetToScannerView();
             }
+          
+             if (viewId === 'pos-view') {
+                renderInventory();
+                // renderRecentSales();
+                // renderRecentExpenses();
+            }
 
             // --- LÍNEA AÑADIDA ---
             if (viewId === 'reports-view') {
@@ -1361,6 +1412,13 @@ const historyListContainer = document.getElementById('history-list-container');
                 const viewId = this.getAttribute('data-view');
                 switchView(viewId);
             });
+        });
+      
+      // Coloca esto junto a tus otros event listeners
+        posNavBtn.addEventListener('click', () => {
+            switchView('pos-view');
+            // Aquí podrías llamar a funciones para cargar los datos del POS
+            // por ejemplo: loadPosData();
         });
 
         async function updateProfileInfo(uid) {
@@ -1457,6 +1515,44 @@ const historyListContainer = document.getElementById('history-list-container');
         // --- FIN DE LA LÓGICA CORREGIDA ---
     }
 }
+      
+      // --- Lógica del Punto de Venta (POS) ---
+
+        // Función para cargar y mostrar los productos del inventario
+        async function renderInventory() {
+            const inventoryContainer = document.getElementById('inventory-list-container');
+            inventoryContainer.innerHTML = '<p class="text-gray-500">Cargando inventario...</p>';
+            
+            const productsRef = collection(db, "products");
+            const q = query(productsRef, orderBy("name"));
+            
+            try {
+                const querySnapshot = await getDocs(q);
+                if (querySnapshot.empty) {
+                    inventoryContainer.innerHTML = '<p class="text-center text-gray-600">No hay productos en el inventario.</p>';
+                    return;
+                }
+
+                inventoryContainer.innerHTML = ''; // Limpiar
+                querySnapshot.forEach(doc => {
+                    const product = doc.data();
+                    const productEntry = document.createElement('div');
+                    productEntry.className = 'flex justify-between items-center p-2 border-b';
+                    productEntry.innerHTML = `
+                        <div>
+                            <p class="font-semibold">${product.name}</p>
+                            <p class="text-sm text-gray-500">En stock: <strong>${product.stock}</strong></p>
+                        </div>
+                        <p class="font-bold text-gray-800">$${product.price.toFixed(2)}</p>
+                    `;
+                    inventoryContainer.appendChild(productEntry);
+                });
+            } catch (error) {
+                console.error("Error al cargar inventario:", error);
+                inventoryContainer.innerHTML = '<p class="text-red-500">No se pudo cargar el inventario.</p>';
+            }
+        }
+      
         
         // --- Lógica del Modal de Pago ---
         const paymentModal = document.getElementById('payment-modal');

@@ -370,6 +370,15 @@
                         <h3 class="font-semibold text-gray-700 mb-4">Alumnos por Clase</h3>
                         <canvas id="class-chart"></canvas>
                     </div>
+                   
+                   <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Alumnos para Promoción</h3>
+        <div id="promotion-list-container" class="space-y-3">
+            </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
 
                  </div>
             </div>
@@ -435,9 +444,27 @@
             </div>
           
             
-            <div id="my-progress-view" class="hidden p-4">
-                 <h2 class="text-2xl font-bold text-gray-800">Mi Progreso</h2>
-                 </div>
+            <div id="my-progress-view" class="hidden p-4 sm:p-6 pb-20">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">Mi Progreso</h2>
+
+    <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+        <h3 class="text-lg font-bold text-gray-800 mb-2">Progreso hacia el próximo examen</h3>
+        <div class="flex justify-between items-center text-gray-600 mb-2">
+            <span>Asistencias requeridas: 35</span>
+            <span id="progress-attendance-count" class="font-semibold">0/35</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-4">
+            <div id="progress-bar-exam" class="bg-green-500 h-4 rounded-full transition-all duration-500" style="width: 0%;"></div>
+        </div>
+        <p id="progress-message" class="text-sm text-gray-500 mt-3"></p>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-lg">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Cintas Obtenidas</h3>
+        <div id="awards-container" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 text-center">
+            </div>
+    </div>
+</div>
           
             
             <div id="my-routine-view" class="hidden p-4">
@@ -1067,6 +1094,7 @@ const historyListContainer = document.getElementById('history-list-container');
                 updateProfileInfo(user.uid); 
               listenForClassChanges(); // Necesario para obtener datos del instructor
                 listenForRoutineChanges(user.uid); // NUEVO: Escuchar cambios en la rutina
+                listenForProgressChanges(user.uid);
             } else if (role === 'entrenador') { // NUEVA LÓGICA
                 trainerNav.classList.remove('hidden');
                 trainerNav.classList.add('flex');
@@ -1154,12 +1182,11 @@ const historyListContainer = document.getElementById('history-list-container');
             card.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500');
             icon.classList.remove('fa-check', 'fa-times', 'fa-exclamation-triangle');
             
-            // Función para registrar el intento de acceso en Firestore
             const logAccessAttempt = async (logData) => {
                 try {
                     await addDoc(collection(db, "access_logs"), {
                         ...logData,
-                        timestamp: new Date() // Usamos la fecha actual
+                        timestamp: new Date()
                     });
                 } catch (error) {
                     console.error("Error al registrar el acceso:", error);
@@ -1177,7 +1204,6 @@ const historyListContainer = document.getElementById('history-list-container');
                     const student = studentDoc.data();
                     
                     const expirationDate = student.fechaVencimiento.toDate();
-                    // --- MODIFICACIÓN CLAVE: Normalizamos las fechas a medianoche para una comparación precisa ---
                     expirationDate.setHours(0, 0, 0, 0); 
                     
                     const today = new Date();
@@ -1186,7 +1212,6 @@ const historyListContainer = document.getElementById('history-list-container');
                     studentIdEl.textContent = student.numericId;
                     expirationEl.textContent = formatCustomDate(expirationDate);
 
-                    // --- LÓGICA DE ACCESO CORREGIDA ---
                     if (expirationDate < today) {
                         // ACCESO DENEGADO (VENCIDO)
                         card.classList.add('bg-red-500');
@@ -1197,7 +1222,12 @@ const historyListContainer = document.getElementById('history-list-container');
                         errorSound.play();
                         logAccessAttempt({ studentId: student.numericId, studentName: student.name, status: 'Denegado', reason: 'Pago vencido' });
                     } else {
-                        // ACCESO CONCEDIDO (Puede tener advertencia)
+                       // Si el acceso es concedido, incrementamos la asistencia
+                       const currentAttendance = student.asistencias || 0;
+                       // ✨ CORRECCIÓN APLICADA AQUÍ ✨
+                       await updateDoc(studentDoc.ref, { asistencias: currentAttendance + 1 });
+                       
+                       // ACCESO CONCEDIDO (Puede tener advertencia)
                         const timeDiff = expirationDate.getTime() - today.getTime();
                         const daysLeft = Math.round(timeDiff / (1000 * 3600 * 24));
                         
@@ -2567,39 +2597,61 @@ exportPdfBtn.addEventListener('click', () => {
         }
         
         function renderStudentRoutine(routineDoc) {
-            studentRoutineContainer.innerHTML = '';
-            if (routineDoc.exists()) {
-                const data = routineDoc.data();
-                
-                // Mostrar notas
-                if (data.notes) {
-                    const notesEl = document.createElement('div');
-                    notesEl.className = 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md';
-                    notesEl.innerHTML = `<p class="font-bold">Notas del Entrenador</p><p>${data.notes.replace(/\n/g, '<br>')}</p>`;
-                    studentRoutineContainer.appendChild(notesEl);
-                }
-
-                // Mostrar ejercicios
-                if (data.exercises && data.exercises.length > 0) {
-                    data.exercises.forEach(exercise => {
-                        const exerciseCard = document.createElement('div');
-                        exerciseCard.className = 'bg-white rounded-lg shadow p-4';
-                        exerciseCard.innerHTML = `
-                            <h3 class="font-bold text-lg text-gray-800">${exercise.name}</h3>
-                            <div class="border-t mt-2 pt-2 text-sm text-gray-700 flex justify-around">
-                                <p><span class="font-semibold">Series:</span> ${exercise.sets || 'N/A'}</p>
-                                <p><span class="font-semibold">Duración:</span> ${exercise.duration || 'N/A'}</p>
-                            </div>
-                        `;
-                        studentRoutineContainer.appendChild(exerciseCard);
-                    });
-                } else {
-                     studentRoutineContainer.innerHTML = '<p class="text-gray-500">Tu entrenador aún no ha asignado ejercicios para esta clase.</p>';
-                }
-            } else {
-                studentRoutineContainer.innerHTML = '<p class="text-gray-500">Tu entrenador aún no ha asignado una rutina para tu clase.</p>';
-            }
+    studentRoutineContainer.innerHTML = '';
+    if (routineDoc.exists()) {
+        const data = routineDoc.data();
+        
+        if (data.notes) {
+            const notesEl = document.createElement('div');
+            notesEl.className = 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md';
+            notesEl.innerHTML = `<p class="font-bold">Notas del Entrenador</p><p>${data.notes.replace(/\n/g, '<br>')}</p>`;
+            studentRoutineContainer.appendChild(notesEl);
         }
+
+        if (data.exercises && data.exercises.length > 0) {
+            data.exercises.forEach(exercise => {
+                const exerciseCard = document.createElement('div');
+                // AÑADIMOS CLASES Y UN DATA-ID PARA HACERLO CLICKEABLE
+                exerciseCard.className = 'bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow';
+                exerciseCard.setAttribute('data-exercise-id', exercise.id);
+                exerciseCard.innerHTML = `
+                    <h3 class="font-bold text-lg text-gray-800">${exercise.name}</h3>
+                    <div class="border-t mt-2 pt-2 text-sm text-gray-700 flex justify-around">
+                        <p><span class="font-semibold">Series:</span> ${exercise.sets || 'N/A'}</p>
+                        <p><span class="font-semibold">Duración:</span> ${exercise.duration || 'N/A'}</p>
+                    </div>
+                `;
+                studentRoutineContainer.appendChild(exerciseCard);
+            });
+        } else {
+             studentRoutineContainer.innerHTML = '<p class="text-gray-500">Tu entrenador aún no ha asignado ejercicios para esta clase.</p>';
+        }
+    } else {
+        studentRoutineContainer.innerHTML = '<p class="text-gray-500">Tu entrenador aún no ha asignado una rutina para tu clase.</p>';
+    }
+}
+      
+      // --- AÑADIR ESTE NUEVO BLOQUE DE CÓDIGO ---
+const exerciseDetailModal = document.getElementById('exercise-detail-modal');
+const closeExerciseDetailModalBtn = document.getElementById('close-exercise-detail-modal-btn');
+
+studentRoutineContainer.addEventListener('click', async (e) => {
+    const exerciseCard = e.target.closest('[data-exercise-id]');
+    if (exerciseCard) {
+        const exerciseId = exerciseCard.getAttribute('data-exercise-id');
+        const exerciseDoc = await getDoc(doc(db, "exercises", exerciseId));
+        if (exerciseDoc.exists()) {
+            const data = exerciseDoc.data();
+            document.getElementById('exercise-detail-title').textContent = data.name;
+            document.getElementById('exercise-detail-description').textContent = data.description;
+            exerciseDetailModal.classList.remove('hidden');
+        }
+    }
+});
+
+closeExerciseDetailModalBtn.addEventListener('click', () => {
+    exerciseDetailModal.classList.add('hidden');
+});
       
       
       // --- NUEVAS FUNCIONES PARA EL SISTEMA DE NOTIFICACIONES ---
@@ -2843,6 +2895,9 @@ exportPdfBtn.addEventListener('click', () => {
             createStatusChart(active, expired);
             createBeltChart();
             createClassChart();
+          
+          // 4. NUEVO: Renderizar la lista de promoción
+          renderPromotionList();
         }
         
         // Función para contar alumnos activos y vencidos
@@ -2862,7 +2917,7 @@ exportPdfBtn.addEventListener('click', () => {
             return { active, expired };
         }
 
-        // Función para contar nuevos alumnos del mes
+        // Función para contar nuevos alumnos del mes 
         function countNewStudentsThisMonth() {
             const today = new Date();
             const currentMonth = today.getMonth();
@@ -3048,6 +3103,182 @@ exportPdfBtn.addEventListener('click', () => {
         }
       
       
+// ---Toda la lógica para actualizar la barra de progreso y mostrar trofeos de alumnos. ---
+
+// --- Lógica de Progreso del Alumno ---
+function listenForProgressChanges(studentUid) {
+    // Escuchar cambios en el documento principal del alumno (para asistencias y cinta)
+    onSnapshot(doc(db, "students", studentUid), (docSnap) => {
+        if (docSnap.exists()) {
+            updateExamProgressCard(docSnap.data());
+        }
+    });
+
+    // Escuchar cambios en la subcolección de premios/trofeos
+    const awardsRef = collection(db, "students", studentUid, "awards");
+    onSnapshot(query(awardsRef, orderBy("date", "asc")), (snapshot) => {
+        const awards = snapshot.docs.map(doc => doc.data());
+        renderAwards(awards);
+    });
+}
+
+function updateExamProgressCard(studentData) {
+    const attendanceCount = studentData.asistencias || 0;
+    const requiredAttendance = 35;
+    const nextBelt = getNextBelt(studentData.cinta);
+
+    const attendanceText = document.getElementById('progress-attendance-count');
+    const progressBar = document.getElementById('progress-bar-exam');
+    const progressMessage = document.getElementById('progress-message');
+
+    attendanceText.textContent = `${attendanceCount}/${requiredAttendance}`;
+    
+    let percentage = (attendanceCount / requiredAttendance) * 100;
+    if (percentage > 100) percentage = 100;
+    progressBar.style.width = `${percentage}%`;
+
+    if (attendanceCount >= requiredAttendance) {
+        progressMessage.textContent = `¡Felicidades! Eres elegible para el examen de cinta ${nextBelt}.`;
+        progressBar.classList.remove('bg-green-500');
+        progressBar.classList.add('bg-blue-500'); // Cambia a azul cuando está listo
+    } else {
+        const remaining = requiredAttendance - attendanceCount;
+        progressMessage.textContent = `Faltan ${remaining} asistencias para ser elegible para el examen de cinta ${nextBelt}.`;
+        progressBar.classList.remove('bg-blue-500');
+        progressBar.classList.add('bg-green-500');
+    }
+}
+
+function renderAwards(awards) {
+    const container = document.getElementById('awards-container');
+    container.innerHTML = '';
+    if (awards.length === 0) {
+        container.innerHTML = '<p class="col-span-full text-gray-500">Aún no has ganado insignias.</p>';
+        return;
+    }
+    awards.forEach(award => {
+        const beltColor = getBeltColor(award.belt);
+        const awardDate = award.date.toDate().toLocaleDateString('es-MX');
+        
+        const awardElement = document.createElement('div');
+        awardElement.className = 'flex flex-col items-center';
+        awardElement.innerHTML = `
+            <i class="fas fa-trophy text-5xl" style="color: ${beltColor};"></i>
+            <p class="text-xs font-bold mt-2">${award.belt}</p>
+            <p class="text-xs text-gray-500">${awardDate}</p>
+        `;
+        container.appendChild(awardElement);
+    });
+}
+
+// Función para determinar la siguiente cinta
+function getNextBelt(currentBelt) {
+    const beltOrder = ['Blanca', 'Naranja', 'Naranja Avanzada', 'Amarilla', 'Amarilla Avanzada', 'Verde', 'Verde Avanzada', 'Azul', 'Azul Avanzada', 'Roja', 'Roja 1', 'Roja 2', 'Negra'];
+    const currentIndex = beltOrder.indexOf(currentBelt);
+    if (currentIndex === -1 || currentIndex === beltOrder.length - 1) {
+        return 'Negra (Nivel Superior)';
+    }
+    return beltOrder[currentIndex + 1];
+}
+      
+      
+// --- Contiene toda la lógica para que el admin pueda promover alumnos. ---
+
+// --- Lógica de Promoción de Alumnos (Admin) ---
+const promotionModal = document.getElementById('promotion-modal');
+const promotionListContainer = document.getElementById('promotion-list-container');
+let studentToPromoteId = null;
+
+function renderPromotionList() {
+    promotionListContainer.innerHTML = '';
+    const eligibleStudents = allStudents.filter(s => (s.asistencias || 0) >= 35);
+
+    if (eligibleStudents.length === 0) {
+        promotionListContainer.innerHTML = '<p class="text-center text-gray-500">Ningún alumno es elegible para promoción en este momento.</p>';
+        return;
+    }
+
+    eligibleStudents.forEach(student => {
+        const beltColor = getBeltColor(student.cinta);
+        const studentRow = document.createElement('div');
+        studentRow.className = 'flex justify-between items-center p-2 border-b';
+        studentRow.innerHTML = `
+            <div>
+                <p class="font-semibold">${student.name}</p>
+                <div class="flex items-center text-sm text-gray-600">
+                    <span class="h-3 w-3 rounded-full mr-2" style="background-color: ${beltColor};"></span>
+                    <span>${student.cinta}</span>
+                </div>
+            </div>
+            <div class="text-sm text-gray-600">Asistencias: <strong>${student.asistencias}</strong></div>
+            <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm promote-btn" data-id="${student.id}">Promover</button>
+        `;
+        promotionListContainer.appendChild(studentRow);
+    });
+}
+
+promotionListContainer.addEventListener('click', (e) => {
+    const promoteBtn = e.target.closest('.promote-btn');
+    if (promoteBtn) {
+        studentToPromoteId = promoteBtn.getAttribute('data-id');
+        const student = allStudents.find(s => s.id === studentToPromoteId);
+
+        if (student) {
+            document.getElementById('promotion-student-name').textContent = student.name;
+            document.getElementById('promotion-current-belt').textContent = student.cinta;
+
+            // Poblar el selector con las siguientes cintas
+            const newBeltSelect = document.getElementById('promotion-new-belt-select');
+            newBeltSelect.innerHTML = '';
+            const beltOrder = ['Blanca', 'Naranja', 'Naranja Avanzada', 'Amarilla', 'Amarilla Avanzada', 'Verde', 'Verde Avanzada', 'Azul', 'Azul Avanzada', 'Roja', 'Roja 1', 'Roja 2', 'Negra'];
+            const currentBeltIndex = beltOrder.indexOf(student.cinta);
+            const availableBelts = beltOrder.slice(currentBeltIndex + 1);
+            
+            availableBelts.forEach(belt => {
+                newBeltSelect.innerHTML += `<option value="${belt}">${belt}</option>`;
+            });
+
+            promotionModal.classList.remove('hidden');
+        }
+    }
+});
+
+document.getElementById('cancel-promotion-btn').addEventListener('click', () => {
+    promotionModal.classList.add('hidden');
+});
+
+document.getElementById('confirm-promotion-btn').addEventListener('click', async () => {
+    const newBelt = document.getElementById('promotion-new-belt-select').value;
+    if (!newBelt) {
+        alert("Por favor, selecciona una nueva cinta.");
+        return;
+    }
+
+    try {
+        const studentRef = doc(db, "students", studentToPromoteId);
+
+        // 1. Actualizar cinta y reiniciar asistencias
+        await updateDoc(studentRef, {
+            cinta: newBelt,
+            asistencias: 0 
+        });
+
+        // 2. Añadir el trofeo a la subcolección de premios
+        const awardsRef = collection(db, "students", studentToPromoteId, "awards");
+        await addDoc(awardsRef, {
+            belt: newBelt,
+            date: new Date()
+        });
+
+        alert("¡Alumno promovido con éxito!");
+        promotionModal.classList.add('hidden');
+    } catch (error) {
+        console.error("Error al promover al alumno:", error);
+        alert("Ocurrió un error durante la promoción.");
+    }
+});
+      
+      
       
         checkLogin();
     </script>
@@ -3170,6 +3401,39 @@ exportPdfBtn.addEventListener('click', () => {
         </div>
         <div id="history-list-container" class="flex-grow overflow-y-auto space-y-2">
             </div>
+    </div>
+</div>
+          
+          
+          <div id="exercise-detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="exercise-detail-title" class="text-xl font-bold text-gray-800"></h3>
+            <button id="close-exercise-detail-modal-btn" class="text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <div class="space-y-4 max-h-80 overflow-y-auto">
+            <p id="exercise-detail-description" class="text-gray-700 whitespace-pre-wrap"></p>
+        </div>
+    </div>
+</div>
+          
+          
+          <div id="promotion-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 slide-in">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">Promover Alumno</h3>
+        <p class="mb-2">Vas a promover a <strong id="promotion-student-name"></strong>.</p>
+        <p class="text-sm text-gray-600 mb-4">Cinta actual: <span id="promotion-current-belt"></span></p>
+        <div>
+            <label for="promotion-new-belt-select" class="block text-sm font-medium text-gray-700">Seleccionar Nueva Cinta</label>
+            <select id="promotion-new-belt-select" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                </select>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+            <button type="button" id="cancel-promotion-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg">Cancelar</button>
+            <button type="button" id="confirm-promotion-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Confirmar Promoción</button>
+        </div>
     </div>
 </div>
 

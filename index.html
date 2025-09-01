@@ -196,44 +196,53 @@
                 </div>
             </div>
           
-          <div id="pos-view" class="hidden p-4 sm:p-6 pb-20">
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">Punto de Venta y Gestión</h2>
+            <div id="pos-view" class="hidden p-4 sm:p-6 pb-20">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Punto de Venta y Gestión</h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <button id="new-sale-btn" class="bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 transition flex items-center justify-center space-x-2">
-                <i class="fas fa-shopping-cart"></i>
-                <span>Registrar Venta</span>
-            </button>
-            <button id="new-expense-btn" class="bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 transition flex items-center justify-center space-x-2">
-                <i class="fas fa-file-invoice-dollar"></i>
-                <span>Registrar Gasto</span>
-            </button>
-            <button id="add-product-btn-pos" class="bg-blue-500 text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition flex items-center justify-center space-x-2">
-                <i class="fas fa-box-open"></i>
-                <span>Agregar Producto</span>
-            </button>
-        </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <button id="new-sale-btn" class="bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition flex items-center justify-center space-x-2 text-sm">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Nueva Venta</span>
+                    </button>
+                    <button id="new-expense-btn" class="bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition flex items-center justify-center space-x-2 text-sm">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Nuevo Gasto</span>
+                    </button>
+                    <button id="add-product-btn-pos" class="bg-blue-500 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition flex items-center justify-center space-x-2 text-sm">
+                        <i class="fas fa-box-open"></i>
+                        <span>Agregar Producto</span>
+                    </button>
+                    <button id="manage-categories-btn" class="bg-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition flex items-center justify-center space-x-2 text-sm">
+                        <i class="fas fa-tags"></i>
+                        <span>Categorías</span>
+                    </button>
+                    </div>
 
-        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Inventario de Productos</h3>
-            <div id="inventory-list-container" class="space-y-3 max-h-96 overflow-y-auto">
+                <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Inventario de Productos</h3>
+                  <div class="mb-4">
+    <label for="inventory-category-filter" class="block text-sm font-medium text-gray-700">Filtrar por categoría</label>
+    <select id="inventory-category-filter" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500">
+        </select>
+</div>
+                    <div id="inventory-list-container" class="space-y-4 max-h-96 overflow-y-auto">
+                        </div>
                 </div>
-        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-white p-6 rounded-2xl shadow-lg">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Ventas Recientes</h3>
-                <div id="recent-sales-container" class="space-y-3">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Ventas Recientes</h3>
+                        <div id="recent-sales-container" class="space-y-3">
+                            </div>
                     </div>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-lg">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Gastos Recientes</h3>
-                <div id="recent-expenses-container" class="space-y-3">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Gastos Recientes</h3>
+                        <div id="recent-expenses-container" class="space-y-3">
+                            </div>
                     </div>
+                </div>
             </div>
-        </div>
-    </div>
-            
+
             <div id="students-view" class="hidden p-4">
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
                     <h2 class="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">Gestión de Alumnos</h2>
@@ -601,6 +610,60 @@
         </nav>
     </div>
 
+    <div id="category-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-xl font-bold text-gray-800">Administrar Categorías</h3>
+                <button id="close-category-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+
+            <form id="add-category-form" class="mb-4">
+                <label for="category-name" class="block text-sm font-medium text-gray-700">Nombre de la Categoría</label>
+                <div class="mt-1 flex space-x-2">
+                    <input type="text" id="category-name" class="flex-grow border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Agregar</button>
+                </div>
+            </form>
+
+            <div id="category-list-container" class="flex-grow overflow-y-auto space-y-2">
+                </div>
+        </div>
+    </div>
+
+    <div id="product-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800" id="product-modal-title">Agregar Nuevo Producto</h3>
+                <button id="close-product-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            <form id="product-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="product-category" class="block text-sm font-medium text-gray-700">Categoría</label>
+                        <select id="product-category" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                            </select>
+                    </div>
+                    <div>
+                        <label for="product-name" class="block text-sm font-medium text-gray-700">Nombre del Producto</label>
+                        <input type="text" id="product-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="product-stock" class="block text-sm font-medium text-gray-700">Stock Inicial</label>
+                            <input type="number" id="product-stock" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                        </div>
+                        <div>
+                            <label for="product-price" class="block text-sm font-medium text-gray-700">Precio Unitario</label>
+                            <input type="number" step="0.01" id="product-price" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold text-sm">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div id="class-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
             <div class="flex justify-between items-center mb-4">
@@ -927,7 +990,8 @@
             getDocs, // <--- FUNCIÓN IMPORTADA
             orderBy, // <--- FUNCIÓN IMPORTADA
             addDoc, // <--- FUNCIÓN IMPORTADA
-            deleteDoc // <--- FUNCIÓN IMPORTADA
+            deleteDoc, // <--- FUNCIÓN IMPORTADA
+            writeBatch // <-- AÑADE ESTA LÍNEA
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Tu configuración de Firebase
@@ -982,6 +1046,9 @@
         let allNotifications = [];
         let unreadNotificationsCount = 0;
         let currentEditingNotificationId = null; // Saber si esta editando o creando
+        let allCategories = [];
+        let allProducts = [];
+        let currentEditingProductId = null; // Para futura edición de productos
 
         const successSound = new Audio('Acceso_Concedido.mp3');
         const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -1049,7 +1116,17 @@ const showHistoryBtn = document.getElementById('show-history-btn');
 const dailyHistoryModal = document.getElementById('daily-history-modal');
 const closeHistoryModalBtn = document.getElementById('close-history-modal-btn');
 const historyListContainer = document.getElementById('history-list-container');
-const posNavBtn = document.getElementById('pos-nav-btn');
+        const posNavBtn = document.getElementById('pos-nav-btn');
+        const manageCategoriesBtn = document.getElementById('manage-categories-btn');
+        const categoryModal = document.getElementById('category-modal');
+        const closeCategoryModalBtn = document.getElementById('close-category-modal-btn');
+        const addCategoryForm = document.getElementById('add-category-form');
+        const categoryListContainer = document.getElementById('category-list-container');
+        const addProductBtnPos = document.getElementById('add-product-btn-pos');
+        const productModal = document.getElementById('product-modal');
+        const closeProductModalBtn = document.getElementById('close-product-modal-btn');
+        const productForm = document.getElementById('product-form');
+        const inventoryListContainer = document.getElementById('inventory-list-container');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1107,6 +1184,8 @@ const posNavBtn = document.getElementById('pos-nav-btn');
                 listenForTrainerChanges();
                 adminNotificationActions.classList.remove('hidden'); // Muestra el botón "Nueva Notificación"
                 listenForNotifications(user.uid, 'admin'); // escucha de notif para admin
+                listenForCategoryChanges();
+                listenForProductChanges();
             } else if (role === 'student') {
                 studentNav.classList.remove('hidden');
                 studentNav.classList.add('flex');
@@ -1516,20 +1595,211 @@ const posNavBtn = document.getElementById('pos-nav-btn');
     }
 }
       
-      // --- Lógica del Punto de Venta (POS) ---
+     // ======== ▼▼ TODA LA NUEVA LÓGICA PARA EL PUNTO DE VENTA ▼▼ ========
+      
+        // --- Gestión de Categorías ---
+
+         function listenForCategoryChanges() {
+            const q = query(collection(db, "categories"), orderBy("name"));
+            onSnapshot(q, (snapshot) => {
+                allCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderCategoriesList(); // Actualiza la lista en el modal
+                populateInventoryFilterDropdown(); // <-- AÑADE ESTA LÍNEA
+            });
+        }
+
+        manageCategoriesBtn.addEventListener('click', () => categoryModal.classList.remove('hidden'));
+        closeCategoryModalBtn.addEventListener('click', () => categoryModal.classList.add('hidden'));
+
+        // Renderiza la lista de categorías en el modal
+        function renderCategoriesList() {
+            categoryListContainer.innerHTML = '';
+            if (allCategories.length === 0) {
+                categoryListContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">No hay categorías creadas.</p>';
+                return;
+            }
+            allCategories.forEach(cat => {
+                const catItem = document.createElement('div');
+                catItem.className = 'flex justify-between items-center p-2 border-b';
+                catItem.setAttribute('data-id', cat.id); // Añadir ID al contenedor principal
+                catItem.innerHTML = `
+                    <span class="text-gray-800 category-name-text">${cat.name}</span>
+                    <div class="flex items-center space-x-3">
+                        <button class="text-blue-500 hover:text-blue-700 edit-category-btn">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="text-red-500 hover:text-red-700 delete-category-btn" data-name="${cat.name}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                categoryListContainer.appendChild(catItem);
+            });
+        }
+
+        // Formulario para agregar una nueva categoría
+        addCategoryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const categoryNameInput = document.getElementById('category-name');
+            const name = categoryNameInput.value.trim();
+            if (!name) return;
+
+            try {
+                await addDoc(collection(db, "categories"), { name });
+                categoryNameInput.value = '';
+            } catch (error) {
+                console.error("Error al agregar categoría:", error);
+                alert("No se pudo agregar la categoría.");
+            }
+        });
+
+        // Event listener para eliminar y AHORA TAMBIÉN EDITAR categorías
+        categoryListContainer.addEventListener('click', async (e) => {
+            const container = e.target.closest('[data-id]');
+            if (!container) return;
+
+            const categoryId = container.dataset.id;
+            const nameSpan = container.querySelector('.category-name-text');
+            const editBtn = e.target.closest('.edit-category-btn');
+            const deleteBtn = e.target.closest('.delete-category-btn');
+            const saveBtn = e.target.closest('.save-category-btn');
+
+            if (deleteBtn) {
+                const categoryName = deleteBtn.dataset.name;
+                if (confirm(`¿Seguro que quieres eliminar la categoría "${categoryName}"?`)) {
+                    try {
+                        await deleteDoc(doc(db, "categories", categoryId));
+                    } catch (error) {
+                        console.error("Error al eliminar categoría:", error);
+                        alert("No se pudo eliminar la categoría.");
+                    }
+                }
+            } else if (editBtn) {
+                const currentName = nameSpan.textContent;
+                container.innerHTML = `
+                    <input type="text" class="flex-grow border border-gray-300 rounded-md py-1 px-2 category-name-input" value="${currentName}">
+                    <div class="flex items-center space-x-3">
+                        <button class="text-green-500 hover:text-green-700 save-category-btn">
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                `;
+                container.querySelector('.category-name-input').focus();
+            } else if (saveBtn) {
+                const input = container.querySelector('.category-name-input');
+                const newName = input.value.trim();
+                const oldName = allCategories.find(c => c.id === categoryId).name;
+
+                if (newName && newName !== oldName) {
+                    try {
+                        // Paso 1: Actualizar el nombre en la colección 'categories'
+                        await updateDoc(doc(db, "categories", categoryId), { name: newName });
+
+                        // Paso 2: Actualizar el 'categoryName' en todos los productos afectados
+                        const q = query(collection(db, "products"), where("categoryName", "==", oldName));
+                        const productsSnapshot = await getDocs(q);
+                        const updatePromises = [];
+                        productsSnapshot.forEach(productDoc => {
+                            updatePromises.push(updateDoc(productDoc.ref, { categoryName: newName }));
+                        });
+                        await Promise.all(updatePromises);
+                        
+                        alert("Categoría actualizada con éxito.");
+                    } catch (error) {
+                        console.error("Error al actualizar la categoría:", error);
+                        alert("No se pudo actualizar la categoría.");
+                    }
+                }
+                // Nota: la UI se actualizará automáticamente gracias a onSnapshot
+            }
+        });
+
+        // --- Gestión de Productos ---
+
+        function listenForProductChanges() {
+            const q = query(collection(db, "products"), orderBy("categoryName"), orderBy("name"));
+            onSnapshot(q, (snapshot) => {
+                allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderInventory(); // Llama a redibujar el inventario en la vista principal
+            });
+        }
+
+        addProductBtnPos.addEventListener('click', () => {
+            productForm.reset();
+            document.getElementById('product-modal-title').textContent = "Agregar Nuevo Producto";
+            populateCategoryDropdown(document.getElementById('product-category'));
+            productModal.classList.remove('hidden');
+        });
+
+        closeProductModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
+
+        // Llena el <select> de categorías en el modal de productos
+        function populateCategoryDropdown(selectElement) {
+            selectElement.innerHTML = '<option value="">-- Selecciona una categoría --</option>';
+            allCategories.forEach(cat => {
+                selectElement.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
+            });
+        }
+
+        // Formulario para guardar un nuevo producto
+        productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const productData = {
+                categoryName: document.getElementById('product-category').value,
+                name: document.getElementById('product-name').value,
+                stock: parseInt(document.getElementById('product-stock').value),
+                price: parseFloat(document.getElementById('product-price').value)
+            };
+
+            if (!productData.categoryName || !productData.name) {
+                alert("Por favor, completa todos los campos.");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "products"), productData);
+                alert("Producto agregado con éxito.");
+                productModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Error al guardar producto:", error);
+                alert("No se pudo guardar el producto.");
+            }
+        });
+      
+        // ======== ▼▼ NUEVA FUNCIÓN PARA LLENAR EL FILTRO ▼▼ ========
+        function populateInventoryFilterDropdown() {
+            const filterSelect = document.getElementById('inventory-category-filter');
+            const currentValue = filterSelect.value; // Guardar valor actual para no resetearlo
+            filterSelect.innerHTML = '<option value="all">Todas las categorías</option>';
+            allCategories.forEach(cat => {
+                filterSelect.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
+            });
+            filterSelect.value = currentValue; // Restaurar valor
+        }
+      
 
         // Función para cargar y mostrar los productos del inventario
-        async function renderInventory() {
+        async function renderInventory(category = 'all') { // <-- Acepta un parámetro de categoría
             const inventoryContainer = document.getElementById('inventory-list-container');
             inventoryContainer.innerHTML = '<p class="text-gray-500">Cargando inventario...</p>';
             
             const productsRef = collection(db, "products");
-            const q = query(productsRef, orderBy("name"));
+            let q; // La consulta se definirá dinámicamente
+
+            // --- INICIO DE LA MODIFICACIÓN ---
+            // Si la categoría es 'all', obtenemos todos los productos.
+            // Si no, filtramos por el nombre de la categoría seleccionada.
+            if (category === 'all') {
+                q = query(productsRef, orderBy("name"));
+            } else {
+                q = query(productsRef, where("categoryName", "==", category), orderBy("name"));
+            }
+            // --- FIN DE LA MODIFICACIÓN ---
             
             try {
                 const querySnapshot = await getDocs(q);
                 if (querySnapshot.empty) {
-                    inventoryContainer.innerHTML = '<p class="text-center text-gray-600">No hay productos en el inventario.</p>';
+                    inventoryContainer.innerHTML = '<p class="text-center text-gray-600">No hay productos en esta categoría.</p>';
                     return;
                 }
 
@@ -1552,6 +1822,11 @@ const posNavBtn = document.getElementById('pos-nav-btn');
                 inventoryContainer.innerHTML = '<p class="text-red-500">No se pudo cargar el inventario.</p>';
             }
         }
+      
+      // ======== ▼▼ NUEVO EVENT LISTENER PARA EL FILTRO ▼▼ ========
+        document.getElementById('inventory-category-filter').addEventListener('change', (e) => {
+            renderInventory(e.target.value);
+        });
       
         
         // --- Lógica del Modal de Pago ---

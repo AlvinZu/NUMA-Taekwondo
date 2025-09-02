@@ -1077,6 +1077,7 @@
         let currentEditingProductId = null; // Para futura edición de productos
         let allExpenses = [];
         let currentEditingExpenseId = null;
+        let cart = []; // Carrito de la venta actual
 
         const successSound = new Audio('Acceso_Concedido.mp3');
         const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -1167,6 +1168,15 @@ const historyListContainer = document.getElementById('history-list-container');
         const closeExpenseModalBtn = document.getElementById('close-expense-modal-btn');
         const expenseForm = document.getElementById('expense-form');
         const recentExpensesContainer = document.getElementById('recent-expenses-container');
+        const newSaleBtn = document.getElementById('new-sale-btn');
+        const newSaleModal = document.getElementById('new-sale-modal');
+        const closeSaleModalBtn = document.getElementById('close-sale-modal-btn');
+        const saleProductList = document.getElementById('sale-product-list');
+        const saleCartItems = document.getElementById('sale-cart-items');
+        const saleTotalAmount = document.getElementById('sale-total-amount');
+        const confirmSaleBtn = document.getElementById('confirm-sale-btn');
+        const saleStudentSelect = document.getElementById('sale-student-select');
+        const recentSalesContainer = document.getElementById('recent-sales-container');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1227,6 +1237,7 @@ const historyListContainer = document.getElementById('history-list-container');
                 listenForCategoryChanges();
                 listenForProductChanges();
                 listenForExpenseChanges();
+                listenForSalesChanges();
             } else if (role === 'student') {
                 studentNav.classList.remove('hidden');
                 studentNav.classList.add('flex');
@@ -1509,7 +1520,7 @@ const historyListContainer = document.getElementById('history-list-container');
           
              if (viewId === 'pos-view') {
                 renderInventory();
-                // renderRecentSales();
+                 renderRecentSales();
                 renderRecentExpenses();
             }
 
@@ -3919,6 +3930,333 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
 }
       
       
+       // --- Abrir y preparar el modal de venta ---
+        newSaleBtn.addEventListener('click', () => {
+            cart = []; // Limpiar carrito
+            populateSaleStudentDropdown();
+            populateSaleProductList();
+            renderCart();
+            newSaleModal.classList.remove('hidden');
+        });
+
+        closeSaleModalBtn.addEventListener('click', () => {
+            newSaleModal.classList.add('hidden');
+        });
+      
+      // --- Llenar los datos en el modal ---
+        function populateSaleStudentDropdown() {
+            saleStudentSelect.innerHTML = '<option value="">Venta General (Sin asignar)</option>';
+            // Ordenar alumnos alfabéticamente
+            const sortedStudents = [...allStudents].sort((a, b) => a.name.localeCompare(b.name));
+            sortedStudents.forEach(student => {
+                saleStudentSelect.innerHTML += `<option value="${student.id}">${student.name} (ID: ${student.numericId})</option>`;
+            });
+        }
+
+        function populateSaleProductList() {
+            saleProductList.innerHTML = '';
+            if (allProducts.length === 0) {
+                saleProductList.innerHTML = '<p class="text-sm text-center text-gray-500">No hay productos en el inventario.</p>';
+                return;
+            }
+            allProducts.forEach(product => {
+                // Solo mostrar productos con stock
+                if (product.stock > 0) {
+                    const productItem = document.createElement('div');
+                    productItem.className = 'flex justify-between items-center p-2 border rounded-md cursor-pointer hover:bg-blue-100';
+                    productItem.dataset.productId = product.id;
+                    productItem.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-sm">${product.name}</p>
+                            <p class="text-xs text-gray-500">Stock: ${product.stock}</p>
+                        </div>
+                        <p class="font-bold text-sm text-blue-600">$${product.price.toFixed(2)}</p>
+                    `;
+                    saleProductList.appendChild(productItem);
+                }
+            });
+        }
+
+        // --- Lógica del Carrito de Compras ---
+        saleProductList.addEventListener('click', (e) => {
+            const productDiv = e.target.closest('[data-product-id]');
+            if (productDiv) {
+                addProductToCart(productDiv.dataset.productId);
+            }
+        });
+
+        function addProductToCart(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            const existingCartItem = cart.find(item => item.id === productId);
+
+            // Verificar stock
+            const currentQuantityInCart = existingCartItem ? existingCartItem.quantity : 0;
+            if (product.stock <= currentQuantityInCart) {
+                alert(`No hay más stock disponible para "${product.name}".`);
+                return;
+            }
+
+            if (existingCartItem) {
+                existingCartItem.quantity++;
+            } else {
+                cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1 });
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            saleCartItems.innerHTML = '';
+            if (cart.length === 0) {
+                saleCartItems.innerHTML = '<p class="text-center text-gray-500">El carrito está vacío.</p>';
+                saleTotalAmount.textContent = '$0.00';
+                return;
+            }
+
+            let total = 0;
+            cart.forEach((item, index) => {
+                const subtotal = item.price * item.quantity;
+                total += subtotal;
+                const cartItemDiv = document.createElement('div');
+                cartItemDiv.className = 'flex justify-between items-center text-sm p-2 bg-white rounded';
+                cartItemDiv.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${item.name}</p>
+                        <p class="text-xs text-gray-600">$${item.price.toFixed(2)} x ${item.quantity}</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="font-bold">$${subtotal.toFixed(2)}</span>
+                        <button class="text-red-500 hover:text-red-700 remove-from-cart-btn" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `;
+                saleCartItems.appendChild(cartItemDiv);
+            });
+
+            saleTotalAmount.textContent = `$${total.toFixed(2)}`;
+        }
+        
+        // Delegación de eventos para eliminar del carrito
+        saleCartItems.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-from-cart-btn');
+            if(removeBtn) {
+                const index = parseInt(removeBtn.dataset.index);
+                cart.splice(index, 1);
+                renderCart();
+            }
+        });
+
+        // --- Procesar y Guardar la Venta ---
+        confirmSaleBtn.addEventListener('click', async () => {
+            if (cart.length === 0) {
+                alert("El carrito está vacío. Agrega al menos un producto para vender.");
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const studentId = saleStudentSelect.value;
+            const student = allStudents.find(s => s.id === studentId);
+
+            const saleData = {
+                items: cart,
+                total: total,
+                paymentMethod: document.getElementById('sale-payment-method').value,
+                studentId: studentId || null,
+                studentName: student ? student.name : 'Venta General',
+                date: new Date()
+            };
+            
+            // Usar un batch para asegurar que todas las operaciones se completen o ninguna
+            const batch = writeBatch(db);
+
+            // 1. Guardar el documento de la venta
+            const salesRef = collection(db, "sales");
+            batch.set(doc(salesRef), saleData);
+
+            // 2. Actualizar el stock de cada producto vendido
+            cart.forEach(item => {
+                const productRef = doc(db, "products", item.id);
+                const product = allProducts.find(p => p.id === item.id);
+                const newStock = product.stock - item.quantity;
+                batch.update(productRef, { stock: newStock });
+            });
+            
+            try {
+                await batch.commit();
+                alert("¡Venta registrada con éxito!");
+                newSaleModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Error al registrar la venta:", error);
+                alert("No se pudo registrar la venta. El stock no ha sido modificado.");
+            }
+        });
+
+        // --- Escuchar y Mostrar Ventas Recientes ---
+        function listenForSalesChanges() {
+            const q = query(collection(db, "sales"), orderBy("date", "desc"), limit(10));
+            onSnapshot(q, (snapshot) => {
+                const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderRecentSales(sales);
+            });
+        }
+
+        function renderRecentSales(sales) {
+            recentSalesContainer.innerHTML = '';
+            if (sales.length === 0) {
+                recentSalesContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">No hay ventas recientes.</p>';
+                return;
+            }
+            sales.forEach(sale => {
+                const saleDate = sale.date.toDate();
+                const formattedDate = saleDate.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+                
+                const saleItem = document.createElement('div');
+                // AÑADIMOS data-id y clases para hacerlo interactivo
+                saleItem.className = 'flex justify-between items-center p-3 border-b hover:bg-gray-50';
+                saleItem.setAttribute('data-id', sale.id);
+
+                saleItem.innerHTML = `
+                    <div class="flex-grow cursor-pointer view-sale-details">
+                        <p class="font-semibold">${sale.studentName}</p>
+                        <p class="text-xs text-gray-500">${formattedDate} - ${sale.items.length} producto(s)</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <p class="font-bold text-green-600 text-lg">$${sale.total.toFixed(2)}</p>
+                        <button class="text-gray-400 hover:text-red-600 delete-sale-icon-btn text-lg" title="Eliminar Venta">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+                recentSalesContainer.appendChild(saleItem);
+            });
+        }
+      
+      
+      // --- Lógica para Ver Detalles y Eliminar Ventas ---
+        const saleDetailsModal = document.getElementById('sale-details-modal');
+        const saleDetailsContent = document.getElementById('sale-details-content');
+        const closeSaleDetailsModalBtn = document.getElementById('close-sale-details-modal-btn');
+        const deleteSaleBtn = document.getElementById('delete-sale-btn');
+        let currentViewingSaleId = null;
+
+        closeSaleDetailsModalBtn.addEventListener('click', () => {
+            saleDetailsModal.classList.add('hidden');
+            currentViewingSaleId = null;
+        });
+
+        // Usamos delegación de eventos en el contenedor de ventas recientes
+        recentSalesContainer.addEventListener('click', async (e) => {
+            const saleContainer = e.target.closest('[data-id]');
+            if (!saleContainer) return;
+
+            const saleId = saleContainer.dataset.id;
+            
+            // Si se hizo clic en el botón de eliminar
+            if (e.target.closest('.delete-sale-icon-btn')) {
+                handleDeleteSale(saleId);
+            } 
+            // Si se hizo clic en el área principal para ver detalles
+            else if (e.target.closest('.view-sale-details')) {
+                currentViewingSaleId = saleId;
+                await showSaleDetails(saleId);
+            }
+        });
+
+        async function showSaleDetails(saleId) {
+            saleDetailsContent.innerHTML = '<p class="text-gray-500">Cargando detalles...</p>';
+            saleDetailsModal.classList.remove('hidden');
+
+            try {
+                const saleDoc = await getDoc(doc(db, "sales", saleId));
+                if (!saleDoc.exists()) {
+                    saleDetailsContent.innerHTML = '<p class="text-red-500">Error: No se encontró la venta.</p>';
+                    return;
+                }
+                const sale = saleDoc.data();
+                const saleDate = sale.date.toDate();
+                
+                let itemsHtml = sale.items.map(item => `
+                    <div class="flex justify-between items-center p-2 border-b">
+                        <span>${item.name} (x${item.quantity})</span>
+                        <span class="font-medium">$${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                `).join('');
+
+                saleDetailsContent.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Fecha de Venta</p>
+                            <p class="font-medium">${saleDate.toLocaleString('es-MX')}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Cliente</p>
+                            <p class="font-medium">${sale.studentName}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Método de Pago</p>
+                            <p class="font-medium">${sale.paymentMethod}</p>
+                        </div>
+                        <div class="border-t pt-3">
+                            <h4 class="font-semibold mb-2">Productos</h4>
+                            <div class="space-y-1">${itemsHtml}</div>
+                        </div>
+                        <div class="flex justify-between items-center text-lg font-bold text-gray-800 mt-4 border-t pt-3">
+                            <span>TOTAL:</span>
+                            <span>$${sale.total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error("Error al mostrar detalles de la venta:", error);
+                saleDetailsContent.innerHTML = '<p class="text-red-500">No se pudieron cargar los detalles.</p>';
+            }
+        }
+        
+        // Asignar evento al botón de eliminar DENTRO del modal
+        deleteSaleBtn.addEventListener('click', () => {
+            if (currentViewingSaleId) {
+                handleDeleteSale(currentViewingSaleId);
+            }
+        });
+
+        async function handleDeleteSale(saleId) {
+            if (!confirm("¿Estás seguro de que quieres eliminar esta venta?\n\n¡Esta acción es irreversible y el stock de los productos será restaurado!")) {
+                return;
+            }
+
+            try {
+                const saleRef = doc(db, "sales", saleId);
+                const saleDoc = await getDoc(saleRef);
+                if (!saleDoc.exists()) throw new Error("La venta ya no existe.");
+                
+                const saleData = saleDoc.data();
+                const batch = writeBatch(db);
+
+                // 1. Restaurar el stock de cada producto
+                for (const item of saleData.items) {
+                    const productRef = doc(db, "products", item.id);
+                    const productDoc = await getDoc(productRef);
+                    if (productDoc.exists()) {
+                        const currentStock = productDoc.data().stock || 0;
+                        batch.update(productRef, { stock: currentStock + item.quantity });
+                    }
+                }
+                
+                // 2. Eliminar el documento de la venta
+                batch.delete(saleRef);
+
+                // Ejecutar todas las operaciones
+                await batch.commit();
+
+                alert("Venta eliminada con éxito y stock restaurado.");
+                saleDetailsModal.classList.add('hidden'); // Cierra el modal si estaba abierto
+            } catch (error) {
+                console.error("Error al eliminar la venta:", error);
+                alert("Hubo un error al intentar eliminar la venta.");
+            }
+        }
+      
+      
       
       
         
@@ -4124,6 +4462,81 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         <h3 class="text-2xl font-bold text-gray-800 mb-2">¡Felicidades!</h3>
         <p id="celebration-message" class="text-gray-600 mb-6">Has obtenido una nueva cinta.</p>
         <button id="close-celebration-modal" class="bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700">Cerrar</button>
+    </div>
+</div>
+          
+          
+          <div id="new-sale-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 slide-in flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 class="text-xl font-bold text-gray-800">Registrar Nueva Venta</h3>
+            <button id="close-sale-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-2xl"></i></button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow overflow-y-auto">
+            <div class="flex flex-col">
+                <div class="mb-4">
+                    <label for="sale-student-select" class="block text-sm font-medium text-gray-700">Asignar a Alumno (Opcional)</label>
+                    <select id="sale-student-select" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                        <option value="">Venta General (Sin asignar)</option>
+                        </select>
+                </div>
+
+                <h4 class="font-semibold text-gray-700 mb-2">Productos Disponibles</h4>
+                <div id="sale-product-list" class="flex-grow overflow-y-auto border rounded-md p-2 space-y-2 max-h-60 bg-gray-50">
+                    </div>
+            </div>
+
+            <div>
+                <h4 class="font-semibold text-gray-700 mb-2">Carrito de Compra</h4>
+                <div id="sale-cart-items" class="border rounded-md p-3 space-y-3 min-h-[150px] bg-gray-50">
+                    <p class="text-center text-gray-500">El carrito está vacío.</p>
+                </div>
+                
+                <div class="border-t mt-4 pt-4 space-y-3">
+                    <div class="flex justify-between items-center text-xl font-bold text-gray-800">
+                        <span>TOTAL:</span>
+                        <span id="sale-total-amount">$0.00</span>
+                    </div>
+
+                    <div>
+                        <label for="sale-payment-method" class="block text-sm font-medium text-gray-700">Método de Pago</label>
+                        <select id="sale-payment-method" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                            <option>Efectivo</option>
+                            <option>Transferencia</option>
+                            <option>Tarjeta de Débito</option>
+                            <option>Tarjeta de Crédito</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end border-t pt-4">
+            <button id="confirm-sale-btn" class="bg-green-600 text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-green-700 transition">
+                <i class="fas fa-check-circle mr-2"></i> Confirmar Venta
+            </button>
+        </div>
+    </div>
+</div>
+          
+          
+          <div id="sale-details-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 slide-in max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 class="text-xl font-bold text-gray-800">Detalles de la Venta</h3>
+            <button id="close-sale-details-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-2xl"></i></button>
+        </div>
+
+        <div id="sale-details-content" class="flex-grow overflow-y-auto">
+            <p class="text-gray-500">Cargando detalles...</p>
+        </div>
+        
+        <div class="mt-6 flex justify-end border-t pt-4">
+            <button id="delete-sale-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-red-700 transition">
+                <i class="fas fa-trash-alt mr-2"></i>Eliminar Venta
+            </button>
+        </div>
     </div>
 </div>
 

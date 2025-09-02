@@ -572,6 +572,13 @@
     </div>
 </div>
           
+          
+          <div id="videos-view" class="hidden p-4 sm:p-6 pb-20">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">Videoteca de Técnicas</h2>
+    <div id="video-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
+</div>
+          
             
             <div id="my-routine-view" class="hidden p-4">
                     <h2 class="text-2xl font-bold text-gray-800">Mi Rutina</h2>
@@ -653,6 +660,11 @@
                         <i class="fas fa-chart-line text-xl mb-1"></i>
                         <span class="text-xs font-medium">Mi Progreso</span>
                     </button>
+                  
+                  <button class="nav-item text-gray-500 flex flex-col items-center text-center w-full" data-view="videos-view">
+        <i class="fas fa-video text-xl mb-1"></i>
+        <span class="text-xs font-medium">Videos</span>
+    </button>
                 </div>             
                             
             </div>
@@ -1219,6 +1231,11 @@ const historyListContainer = document.getElementById('history-list-container');
         const dailyIncomeTotal = document.getElementById('daily-income-total');
         const weeklyIncomeTotal = document.getElementById('weekly-income-total');
         const monthlyIncomeTotal = document.getElementById('monthly-income-total');
+        const videoListContainer = document.getElementById('video-list-container');
+        const videoPlayerModal = document.getElementById('video-player-modal');
+        const videoModalTitle = document.getElementById('video-modal-title');
+        const videoPlayer = document.getElementById('video-player');
+        const closeVideoModalBtn = document.getElementById('close-video-modal-btn');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1312,6 +1329,7 @@ const historyListContainer = document.getElementById('history-list-container');
               listenForClassChanges(); // Necesario para obtener datos del instructor
                 listenForRoutineChanges(user.uid); // NUEVO: Escuchar cambios en la rutina
                 listenForProgressChanges(user.uid);
+                listenForVideoChanges(); // Escucha los videos
             } else if (role === 'entrenador') { // NUEVA LÓGICA
                 trainerNav.classList.remove('hidden');
                 trainerNav.classList.add('flex');
@@ -4483,6 +4501,62 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         }
       
       
+       // --- LÓGICA PARA LA SECCIÓN DE VIDEOS (ALUMNOS) ---
+      
+      // Escucha cambios en la colección de videos
+        function listenForVideoChanges() {
+            const q = query(collection(db, "videos"), orderBy("order"));
+            onSnapshot(q, (snapshot) => {
+                const videos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderVideosList(videos);
+            });
+        }
+
+        // Dibuja la lista de videos en la vista
+        function renderVideosList(videos) {
+            videoListContainer.innerHTML = '';
+            if (videos.length === 0) {
+                videoListContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">No hay videos disponibles en este momento.</p>';
+                return;
+            }
+
+            videos.forEach(video => {
+                const videoCard = document.createElement('div');
+                videoCard.className = 'bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transform hover:-translate-y-1 transition-transform duration-300';
+                videoCard.innerHTML = `
+                    <img src="${video.thumbnailUrl || 'https://via.placeholder.com/150'}" alt="${video.title}" class="w-full h-40 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg text-gray-800">${video.title}</h3>
+                        <p class="text-sm text-gray-600 mt-1">${video.description}</p>
+                    </div>
+                `;
+                // Guardar datos en el elemento para usarlos al hacer clic
+                videoCard.dataset.videoUrl = video.videoUrl;
+                videoCard.dataset.title = video.title;
+                videoListContainer.appendChild(videoCard);
+            });
+        }
+
+        // Abre el modal y reproduce el video al hacer clic en una tarjeta
+        videoListContainer.addEventListener('click', (e) => {
+            const card = e.target.closest('[data-video-url]');
+            if (card) {
+                const url = card.dataset.videoUrl;
+                const title = card.dataset.title;
+                
+                videoModalTitle.textContent = title;
+                videoPlayer.src = url;
+                videoPlayerModal.classList.remove('hidden');
+            }
+        });
+
+        // Cierra el modal y detiene el video
+        closeVideoModalBtn.addEventListener('click', () => {
+            videoPlayerModal.classList.add('hidden');
+            videoPlayer.pause();
+            videoPlayer.src = ''; // Limpiar la fuente para detener la descarga
+        });
+      
       
         
     </script>
@@ -4676,6 +4750,21 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                 <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold text-sm">Guardar Gasto</button>
             </div>
         </form>
+    </div>
+</div>
+          
+          
+          <div id="video-player-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl slide-in flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 id="video-modal-title" class="text-xl font-bold text-gray-800"></h3>
+            <button id="close-video-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-2xl"></i></button>
+        </div>
+        <div class="aspect-video bg-black">
+            <video id="video-player" class="w-full h-full" controls autoplay>
+                Tu navegador no soporta la etiqueta de video.
+            </video>
+        </div>
     </div>
 </div>
           

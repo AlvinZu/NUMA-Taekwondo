@@ -1177,6 +1177,10 @@ const historyListContainer = document.getElementById('history-list-container');
         const confirmSaleBtn = document.getElementById('confirm-sale-btn');
         const saleStudentSelect = document.getElementById('sale-student-select');
         const recentSalesContainer = document.getElementById('recent-sales-container');
+        const expenseDetailsModal = document.getElementById('expense-details-modal');
+        const closeExpenseDetailsModalBtn = document.getElementById('close-expense-details-modal-btn');
+        const expenseDetailConcept = document.getElementById('expense-detail-concept');
+        const expenseDetailDescription = document.getElementById('expense-detail-description');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1519,8 +1523,7 @@ const historyListContainer = document.getElementById('history-list-container');
             }
           
              if (viewId === 'pos-view') {
-                renderInventory();
-                 renderRecentSales();
+                renderInventory();                 
                 renderRecentExpenses();
             }
 
@@ -3873,21 +3876,28 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         });
         
         // Manejar clics para editar y eliminar gastos
+        // Listener unificado para Ver, Editar y Eliminar
         recentExpensesContainer.addEventListener('click', (e) => {
             const container = e.target.closest('[data-id]');
             if (!container) return;
 
             const expenseId = container.dataset.id;
             const expense = allExpenses.find(ex => ex.id === expenseId);
+            if (!expense) return; // Salir si no se encuentra el gasto
             
             const viewDetails = e.target.closest('.view-expense-details');
             const editBtn = e.target.closest('.edit-expense-btn');
             const deleteBtn = e.target.closest('.delete-expense-btn');
 
+            // --- LÓGICA MODIFICADA ---
             if (viewDetails) {
-                const description = expense.description || "No se proporcionó una descripción.";
-                alert(`Descripción del Gasto:\n\n${expense.concept}\n\n${description}`);
+                // Rellena el modal con los datos del gasto
+                expenseDetailConcept.textContent = expense.concept;
+                expenseDetailDescription.textContent = expense.description || "No se proporcionó una descripción.";
+                // Muestra el modal
+                expenseDetailsModal.classList.remove('hidden');
             }
+            // --- FIN DE LA MODIFICACIÓN ---
             
             if (editBtn) {
                 currentEditingExpenseId = expenseId;
@@ -3907,6 +3917,11 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                         });
                 }
             }
+        });
+
+        // --- AÑADE ESTE NUEVO EVENT LISTENER PARA CERRAR EL MODAL ---
+        closeExpenseDetailsModalBtn.addEventListener('click', () => {
+            expenseDetailsModal.classList.add('hidden');
         });
       
       
@@ -4453,6 +4468,24 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         </form>
     </div>
 </div>
+          
+          
+          <div id="expense-details-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 id="expense-detail-concept" class="text-xl font-bold text-gray-800">Detalle del Gasto</h3>
+            <button id="close-expense-details-modal-btn" class="text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <div class="space-y-2 max-h-72 overflow-y-auto">
+            <p class="text-sm font-medium text-gray-500">Descripción:</p>
+            <p id="expense-detail-description" class="text-gray-700 whitespace-pre-wrap"></p>
+        </div>
+    </div>
+</div>
+
+          
           
           <div id="celebration-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl shadow-2xl p-8 text-center max-w-md w-full slide-in">

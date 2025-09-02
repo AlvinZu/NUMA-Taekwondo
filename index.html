@@ -265,6 +265,30 @@
                         <div id="recent-expenses-container" class="space-y-3">
                             </div>
                     </div>
+                  <div class="mt-8 pt-8 border-t">
+                    <h3 class="text-2xl font-bold text-blue-600 text-center mb-6">Análisis de Ingresos</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        
+                        <div class="bg-white p-6 rounded-2xl shadow-lg">
+                            <label for="daily-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Día</label>
+                            <input type="date" id="daily-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-4">
+                            <p id="daily-income-total" class="text-4xl font-bold text-gray-800 text-center py-4">$0.00</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-lg">
+                            <label for="weekly-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Semana</label>
+                            <input type="week" id="weekly-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-4">
+                            <p id="weekly-income-total" class="text-4xl font-bold text-gray-800 text-center py-4">$0.00</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-lg">
+                            <label for="monthly-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Mes</label>
+                            <input type="month" id="monthly-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-4">
+                            <p id="monthly-income-total" class="text-4xl font-bold text-gray-800 text-center py-4">$0.00</p>
+                        </div>
+
+                    </div>
+                </div>
                 </div>
             </div>
 
@@ -410,15 +434,23 @@
                         </div>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-2xl shadow-lg flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Ingresos del Mes</p>
-                            <p id="report-monthly-income" class="text-4xl font-bold text-gray-800">...</p>
-                        </div>
-                        <div class="bg-green-100 text-green-600 w-16 h-16 rounded-full flex items-center justify-center">
-                            <i class="fas fa-dollar-sign text-3xl"></i>
-                        </div>
-                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+    <label for="report-daily-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Día (Mensualidades)</label>
+    <input type="date" id="report-daily-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-3">
+    <p id="report-daily-income-display" class="text-4xl font-bold text-gray-800 text-center py-2">$0.00</p>
+</div>
+
+<div class="bg-white p-6 rounded-2xl shadow-lg">
+    <label for="report-weekly-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Semana (Mensualidades)</label>
+    <input type="week" id="report-weekly-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-3">
+    <p id="report-weekly-income-display" class="text-4xl font-bold text-gray-800 text-center py-2">$0.00</p>
+</div>
+
+<div class="bg-white p-6 rounded-2xl shadow-lg">
+    <label for="report-monthly-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Mes (Mensualidades)</label>
+    <input type="month" id="report-monthly-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-3">
+    <p id="report-monthly-income-display" class="text-4xl font-bold text-gray-800 text-center py-2">$0.00</p>
+</div>
 
                     <div class="bg-white p-6 rounded-2xl shadow-lg flex items-center justify-between">
                         <div>
@@ -1181,6 +1213,12 @@ const historyListContainer = document.getElementById('history-list-container');
         const closeExpenseDetailsModalBtn = document.getElementById('close-expense-details-modal-btn');
         const expenseDetailConcept = document.getElementById('expense-detail-concept');
         const expenseDetailDescription = document.getElementById('expense-detail-description');
+        const dailyIncomePicker = document.getElementById('daily-income-picker');
+        const weeklyIncomePicker = document.getElementById('weekly-income-picker');
+        const monthlyIncomePicker = document.getElementById('monthly-income-picker');
+        const dailyIncomeTotal = document.getElementById('daily-income-total');
+        const weeklyIncomeTotal = document.getElementById('weekly-income-total');
+        const monthlyIncomeTotal = document.getElementById('monthly-income-total');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1525,11 +1563,13 @@ const historyListContainer = document.getElementById('history-list-container');
              if (viewId === 'pos-view') {
                 renderInventory();                 
                 renderRecentExpenses();
+                initializeIncomeCalculators(); 
             }
 
             // --- LÍNEA AÑADIDA ---
             if (viewId === 'reports-view') {
                 renderReportsView(); // Llama a la función para generar los reportes
+                initializeReportsIncomeCalculators();
             }
             // --- FIN DE LA MODIFICACIÓN ---
             
@@ -3317,19 +3357,17 @@ closeExerciseDetailModalBtn.addEventListener('click', () => {
             const newStudents = countNewStudentsThisMonth();
             document.getElementById('report-new-students').textContent = newStudents;
 
-            // 2. Calcular y mostrar los ingresos (es una operación asíncrona)
-            document.getElementById('report-monthly-income').textContent = "Calculando...";
-            const income = await calculateMonthlyIncome();
-            document.getElementById('report-monthly-income').textContent = `$${income.toFixed(2)}`;
+            // Los ingresos ahora se calculan dinámicamente, ya no aquí.
 
             // 3. Generar los gráficos
             createStatusChart(active, expired);
             createBeltChart();
             createClassChart();
           
-          // 4. NUEVO: Renderizar la lista de promoción
-          renderPromotionList();
+            // 4. Renderizar la lista de promoción
+            renderPromotionList();
         }
+      
         
         // Función para contar alumnos activos y vencidos
         function countStudentStatus() {
@@ -4271,6 +4309,178 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
             }
         }
       
+      
+       // --- NUEVAS FUNCIONES PARA EL CÁLCULO DE INGRESOS ---
+
+        // Función reutilizable para calcular ingresos en un rango de fechas
+        async function calculateIncomeForDateRange(startDate, endDate) {
+            let totalIncome = 0;
+            const salesRef = collection(db, "sales");
+            const q = query(salesRef, 
+                where("date", ">=", startDate), 
+                where("date", "<=", endDate)
+            );
+            
+            try {
+                const querySnapshot = await getDocs(q);
+                querySnapshot.forEach(doc => {
+                    totalIncome += doc.data().total;
+                });
+                return totalIncome;
+            } catch (error) {
+                console.error("Error calculando ingresos:", error);
+                return 0; // Devuelve 0 si hay un error
+            }
+        }
+
+        // Función para inicializar y manejar los listeners de los selectores de fecha
+        function initializeIncomeCalculators() {
+            // -- Ingresos por Día --
+            const today = new Date().toISOString().split('T')[0];
+            dailyIncomePicker.value = today;
+            dailyIncomePicker.dispatchEvent(new Event('change')); // Dispara el evento para calcular hoy
+
+            dailyIncomePicker.addEventListener('change', async () => {
+                const selectedDate = new Date(dailyIncomePicker.value + 'T00:00:00');
+                const startOfDay = new Date(selectedDate);
+                const endOfDay = new Date(selectedDate);
+                endOfDay.setHours(23, 59, 59, 999);
+                
+                dailyIncomeTotal.textContent = "Calculando...";
+                const income = await calculateIncomeForDateRange(startOfDay, endOfDay);
+                dailyIncomeTotal.textContent = `$${income.toFixed(2)}`;
+            });
+
+            // -- Ingresos por Semana --
+            const { year, week } = getWeekNumber(new Date());
+            weeklyIncomePicker.value = `${year}-W${week.toString().padStart(2, '0')}`;
+            weeklyIncomePicker.dispatchEvent(new Event('change'));
+
+            weeklyIncomePicker.addEventListener('change', async () => {
+                const { startOfWeek, endOfWeek } = getDatesFromWeek(weeklyIncomePicker.value);
+                if (!startOfWeek) return;
+
+                weeklyIncomeTotal.textContent = "Calculando...";
+                const income = await calculateIncomeForDateRange(startOfWeek, endOfWeek);
+                weeklyIncomeTotal.textContent = `$${income.toFixed(2)}`;
+            });
+
+            // -- Ingresos por Mes --
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            monthlyIncomePicker.value = currentMonth;
+            monthlyIncomePicker.dispatchEvent(new Event('change'));
+
+            monthlyIncomePicker.addEventListener('change', async () => {
+                const [year, month] = monthlyIncomePicker.value.split('-').map(Number);
+                const startOfMonth = new Date(year, month - 1, 1);
+                const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+
+                monthlyIncomeTotal.textContent = "Calculando...";
+                const income = await calculateIncomeForDateRange(startOfMonth, endOfMonth);
+                monthlyIncomeTotal.textContent = `$${income.toFixed(2)}`;
+            });
+        }
+
+        // Funciones de ayuda para el cálculo de semanas
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return { year: d.getUTCFullYear(), week: weekNo };
+        }
+
+        function getDatesFromWeek(weekString) {
+            if (!weekString) return {};
+            const [year, week] = weekString.split('-W').map(Number);
+            const simple = new Date(year, 0, 1 + (week - 1) * 7);
+            const dow = simple.getDay();
+            const ISOweekStart = simple;
+            if (dow <= 4) ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+            else ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+            
+            const startOfWeek = new Date(ISOweekStart);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+
+            return { startOfWeek, endOfWeek };
+        }
+      
+      
+       // --- NUEVAS FUNCIONES PARA EL CÁLCULO DE INGRESOS POR PAGOS ---
+
+        // Función reutilizable para calcular ingresos de PAGOS en un rango de fechas
+        async function calculatePaymentsIncomeForDateRange(startDate, endDate) {
+            let totalIncome = 0;
+            // Iteramos sobre todos los alumnos para revisar sus subcolecciones de pagos
+            const studentPromises = allStudents.map(async (student) => {
+                const paymentsRef = collection(db, "students", student.id, "pagos");
+                const q = query(paymentsRef, 
+                    where("fechaPago", ">=", startDate), 
+                    where("fechaPago", "<=", endDate)
+                );
+                
+                try {
+                    const paymentsSnapshot = await getDocs(q);
+                    paymentsSnapshot.forEach(doc => {
+                        totalIncome += doc.data().monto;
+                    });
+                } catch (error) {
+                    console.error(`Error al obtener pagos para el alumno ${student.id}:`, error);
+                }
+            });
+
+            await Promise.all(studentPromises);
+            return totalIncome;
+        }
+
+        // Función para inicializar y manejar los listeners de los selectores de fecha de reportes
+        function initializeReportsIncomeCalculators() {
+            const dailyPicker = document.getElementById('report-daily-income-picker');
+            const weeklyPicker = document.getElementById('report-weekly-income-picker');
+            const monthlyPicker = document.getElementById('report-monthly-income-picker');
+            
+            // -- Ingresos por Día --
+            dailyPicker.value = new Date().toISOString().split('T')[0]; // Hoy por defecto
+            dailyPicker.addEventListener('change', async () => {
+                const selectedDate = new Date(dailyPicker.value + 'T00:00:00');
+                const startOfDay = new Date(selectedDate);
+                const endOfDay = new Date(selectedDate);
+                endOfDay.setHours(23, 59, 59, 999);
+                
+                document.getElementById('report-daily-income-display').textContent = "Calculando...";
+                const income = await calculatePaymentsIncomeForDateRange(startOfDay, endOfDay);
+                document.getElementById('report-daily-income-display').textContent = `$${income.toFixed(2)}`;
+            });
+            dailyPicker.dispatchEvent(new Event('change'));
+
+            // -- Ingresos por Semana --
+            const { year, week } = getWeekNumber(new Date());
+            weeklyPicker.value = `${year}-W${week.toString().padStart(2, '0')}`;
+            weeklyPicker.addEventListener('change', async () => {
+                const { startOfWeek, endOfWeek } = getDatesFromWeek(weeklyPicker.value);
+                if (!startOfWeek) return;
+
+                document.getElementById('report-weekly-income-display').textContent = "Calculando...";
+                const income = await calculatePaymentsIncomeForDateRange(startOfWeek, endOfWeek);
+                document.getElementById('report-weekly-income-display').textContent = `$${income.toFixed(2)}`;
+            });
+            weeklyPicker.dispatchEvent(new Event('change'));
+
+            // -- Ingresos por Mes --
+            monthlyPicker.value = new Date().toISOString().slice(0, 7);
+            monthlyPicker.addEventListener('change', async () => {
+                const [year, month] = monthlyPicker.value.split('-').map(Number);
+                const startOfMonth = new Date(year, month - 1, 1);
+                const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+
+                document.getElementById('report-monthly-income-display').textContent = "Calculando...";
+                const income = await calculatePaymentsIncomeForDateRange(startOfMonth, endOfMonth);
+                document.getElementById('report-monthly-income-display').textContent = `$${income.toFixed(2)}`;
+            });
+            monthlyPicker.dispatchEvent(new Event('change'));
+        }
       
       
       

@@ -1127,6 +1127,13 @@ const historyListContainer = document.getElementById('history-list-container');
         const closeProductModalBtn = document.getElementById('close-product-modal-btn');
         const productForm = document.getElementById('product-form');
         const inventoryListContainer = document.getElementById('inventory-list-container');
+        let currentEditingStockProductId = null; // Para saber qué producto estamos actualizando
+        const addStockModal = document.getElementById('add-stock-modal');
+        const closeStockModalBtn = document.getElementById('close-stock-modal-btn');
+        const stockProductName = document.getElementById('stock-product-name');
+        const stockCurrentValue = document.getElementById('stock-current-value');
+        const stockQuantityToAdd = document.getElementById('stock-quantity-to-add');
+        const confirmAddStockBtn = document.getElementById('confirm-add-stock-btn');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1779,22 +1786,18 @@ const historyListContainer = document.getElementById('history-list-container');
       
 
         // Función para cargar y mostrar los productos del inventario
-        async function renderInventory(category = 'all') { // <-- Acepta un parámetro de categoría
+        async function renderInventory(category = 'all') {
             const inventoryContainer = document.getElementById('inventory-list-container');
             inventoryContainer.innerHTML = '<p class="text-gray-500">Cargando inventario...</p>';
             
             const productsRef = collection(db, "products");
-            let q; // La consulta se definirá dinámicamente
+            let q;
 
-            // --- INICIO DE LA MODIFICACIÓN ---
-            // Si la categoría es 'all', obtenemos todos los productos.
-            // Si no, filtramos por el nombre de la categoría seleccionada.
             if (category === 'all') {
                 q = query(productsRef, orderBy("name"));
             } else {
                 q = query(productsRef, where("categoryName", "==", category), orderBy("name"));
             }
-            // --- FIN DE LA MODIFICACIÓN ---
             
             try {
                 const querySnapshot = await getDocs(q);
@@ -1807,14 +1810,23 @@ const historyListContainer = document.getElementById('history-list-container');
                 querySnapshot.forEach(doc => {
                     const product = doc.data();
                     const productEntry = document.createElement('div');
-                    productEntry.className = 'flex justify-between items-center p-2 border-b';
+                    productEntry.className = 'flex justify-between items-center p-3 border-b';
+                    
+                    // --- INICIO DE LA MODIFICACIÓN ---
+                    // Ahora el stock es un botón clickeable
                     productEntry.innerHTML = `
                         <div>
                             <p class="font-semibold">${product.name}</p>
-                            <p class="text-sm text-gray-500">En stock: <strong>${product.stock}</strong></p>
+                            <div class="text-sm text-gray-500 mt-1">
+                                <button class="edit-stock-btn hover:bg-gray-200 p-1 rounded-md" data-id="${doc.id}">
+                                    En stock: <strong class="text-blue-600">${product.stock}</strong> <i class="fas fa-plus-circle text-xs text-blue-500 ml-1"></i>
+                                </button>
+                            </div>
                         </div>
-                        <p class="font-bold text-gray-800">$${product.price.toFixed(2)}</p>
+                        <p class="font-bold text-gray-800 text-lg">$${product.price.toFixed(2)}</p>
                     `;
+                    // --- FIN DE LA MODIFICACIÓN ---
+                    
                     inventoryContainer.appendChild(productEntry);
                 });
             } catch (error) {
@@ -3650,8 +3662,57 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
 });
       
       
+      // --- NUEVA LÓGICA PARA ACTUALIZAR STOCK ---
+        // Abre el modal al hacer clic en el stock de un producto
+        inventoryListContainer.addEventListener('click', (e) => {
+            const stockBtn = e.target.closest('.edit-stock-btn');
+            if (stockBtn) {
+                currentEditingStockProductId = stockBtn.dataset.id;
+                const product = allProducts.find(p => p.id === currentEditingStockProductId);
+                
+                if (product) {
+                    stockProductName.textContent = product.name;
+                    stockCurrentValue.textContent = product.stock;
+                    stockQuantityToAdd.value = ''; // Limpiar el campo
+                    addStockModal.classList.remove('hidden');
+                    stockQuantityToAdd.focus(); // Poner el cursor en el campo
+                }
+            }
+        });
+
+        // Cierra el modal de stock
+        closeStockModalBtn.addEventListener('click', () => {
+            addStockModal.classList.add('hidden');
+        });
+
+        // Guarda el nuevo stock en Firestore
+        confirmAddStockBtn.addEventListener('click', async () => {
+            const quantityToAdd = parseInt(stockQuantityToAdd.value);
+            if (!currentEditingStockProductId || isNaN(quantityToAdd) || quantityToAdd <= 0) {
+                alert("Por favor, ingresa una cantidad válida para agregar.");
+                return;
+            }
+
+            try {
+                const productRef = doc(db, "products", currentEditingStockProductId);
+                const product = allProducts.find(p => p.id === currentEditingStockProductId);
+                const newStock = (product.stock || 0) + quantityToAdd;
+
+                await updateDoc(productRef, {
+                    stock: newStock
+                });
+
+                alert(`Stock de "${product.name}" actualizado a ${newStock}.`);
+                addStockModal.classList.add('hidden');
+                // La lista se actualizará automáticamente gracias al listener 'onSnapshot'
+            } catch (error) {
+                console.error("Error al actualizar el stock:", error);
+                alert("No se pudo actualizar el stock.");
+            }
+        });
       
-        checkLogin();
+      
+        
     </script>
   
   <div id="exercise-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
@@ -3789,6 +3850,33 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         </div>
     </div>
 </div>
+          
+          <div id="add-stock-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 slide-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">Agregar Stock</h3>
+            <button id="close-stock-modal-btn" class="text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <div>
+            <p class="text-sm text-gray-600">Producto:</p>
+            <p id="stock-product-name" class="font-bold text-lg text-gray-900 mb-4"></p>
+            
+            <p class="text-sm text-gray-600">Stock Actual:</p>
+            <p id="stock-current-value" class="font-semibold text-2xl text-gray-800 mb-4"></p>
+
+            <div>
+                <label for="stock-quantity-to-add" class="block text-sm font-medium text-gray-700">Cantidad a Agregar</label>
+                <input type="number" id="stock-quantity-to-add" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" placeholder="Ej: 10" required>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end">
+            <button id="confirm-add-stock-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold text-sm">Guardar</button>
+        </div>
+    </div>
+</div>
+
           
           
           <div id="promotion-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">

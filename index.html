@@ -1049,6 +1049,8 @@
         let allCategories = [];
         let allProducts = [];
         let currentEditingProductId = null; // Para futura edición de productos
+        let allExpenses = [];
+        let currentEditingExpenseId = null;
 
         const successSound = new Audio('Acceso_Concedido.mp3');
         const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -1134,6 +1136,11 @@ const historyListContainer = document.getElementById('history-list-container');
         const stockCurrentValue = document.getElementById('stock-current-value');
         const stockQuantityToAdd = document.getElementById('stock-quantity-to-add');
         const confirmAddStockBtn = document.getElementById('confirm-add-stock-btn');
+        const newExpenseBtn = document.getElementById('new-expense-btn');
+        const expenseModal = document.getElementById('expense-modal');
+        const closeExpenseModalBtn = document.getElementById('close-expense-modal-btn');
+        const expenseForm = document.getElementById('expense-form');
+        const recentExpensesContainer = document.getElementById('recent-expenses-container');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1193,6 +1200,7 @@ const historyListContainer = document.getElementById('history-list-container');
                 listenForNotifications(user.uid, 'admin'); // escucha de notif para admin
                 listenForCategoryChanges();
                 listenForProductChanges();
+                listenForExpenseChanges();
             } else if (role === 'student') {
                 studentNav.classList.remove('hidden');
                 studentNav.classList.add('flex');
@@ -1475,8 +1483,8 @@ const historyListContainer = document.getElementById('history-list-container');
           
              if (viewId === 'pos-view') {
                 renderInventory();
-                // renderRecentSales();
-                // renderRecentExpenses();
+                renderRecentSales();
+                renderRecentExpenses();
             }
 
             // --- LÍNEA AÑADIDA ---
@@ -3712,6 +3720,135 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         });
       
       
+        // --- NUEVAS FUNCIONES PARA LA GESTIÓN DE GASTOS ---
+
+        function listenForExpenseChanges() {
+            // Consulta para obtener los últimos 50 gastos, ordenados por fecha
+            const q = query(collection(db, "expenses"), orderBy("date", "desc"), limit(50));
+            onSnapshot(q, (snapshot) => {
+                allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderRecentExpenses();
+            });
+        }
+
+        function renderRecentExpenses() {
+            recentExpensesContainer.innerHTML = '';
+            if (allExpenses.length === 0) {
+                recentExpensesContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">No hay gastos registrados.</p>';
+                return;
+            }
+            allExpenses.forEach(expense => {
+                const expenseDate = expense.date.toDate();
+                const formattedDate = expenseDate.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+
+                const expenseItem = document.createElement('div');
+                // MODIFICACIÓN: Añadimos un data-id al contenedor principal
+                expenseItem.className = 'flex justify-between items-center p-3 border-b';
+                expenseItem.setAttribute('data-id', expense.id);
+
+                expenseItem.innerHTML = `
+                    <div class="flex-grow cursor-pointer view-expense-details">
+                        <p class="font-semibold text-gray-800">${expense.concept}</p>
+                        <p class="text-xs text-gray-500">${formattedDate}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <p class="font-bold text-red-500">-$${expense.amount.toFixed(2)}</p>
+                        <button class="text-blue-500 hover:text-blue-700 edit-expense-btn"><i class="fas fa-edit"></i></button>
+                        <button class="text-gray-400 hover:text-red-600 delete-expense-btn"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                recentExpensesContainer.appendChild(expenseItem);
+            });
+        }
+        
+        // Abrir modal para crear un nuevo gasto
+        newExpenseBtn.addEventListener('click', () => {
+            currentEditingExpenseId = null;
+            expenseForm.reset();
+            document.getElementById('expense-modal-title').textContent = "Registrar Nuevo Gasto";
+            expenseModal.classList.remove('hidden');
+        });
+
+        // Cerrar el modal de gastos
+        closeExpenseModalBtn.addEventListener('click', () => {
+            expenseModal.classList.add('hidden');
+        });
+
+        // Guardar o actualizar un gasto en Firestore
+        expenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const expenseData = {
+                concept: document.getElementById('expense-concept').value,
+                amount: parseFloat(document.getElementById('expense-amount').value),
+                description: document.getElementById('expense-description').value,
+                date: new Date()
+            };
+
+            if (!expenseData.concept || isNaN(expenseData.amount)) {
+                alert("Por favor, completa el concepto y el monto.");
+                return;
+            }
+
+            try {
+                if (currentEditingExpenseId) {
+                    const expenseRef = doc(db, "expenses", currentEditingExpenseId);
+                    await updateDoc(expenseRef, {
+                        concept: expenseData.concept,
+                        amount: expenseData.amount,
+                        description: expenseData.description
+                    });
+                    alert("Gasto actualizado con éxito.");
+                } else {
+                    await addDoc(collection(db, "expenses"), expenseData);
+                    alert("Gasto registrado con éxito.");
+                }
+                expenseModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Error al guardar el gasto:", error);
+                alert("No se pudo guardar el gasto.");
+            }
+        });
+        
+        // Manejar clics para editar y eliminar gastos
+        recentExpensesContainer.addEventListener('click', (e) => {
+            const container = e.target.closest('[data-id]');
+            if (!container) return;
+
+            const expenseId = container.dataset.id;
+            const expense = allExpenses.find(ex => ex.id === expenseId);
+            
+            const viewDetails = e.target.closest('.view-expense-details');
+            const editBtn = e.target.closest('.edit-expense-btn');
+            const deleteBtn = e.target.closest('.delete-expense-btn');
+
+            if (viewDetails) {
+                const description = expense.description || "No se proporcionó una descripción.";
+                alert(`Descripción del Gasto:\n\n${expense.concept}\n\n${description}`);
+            }
+            
+            if (editBtn) {
+                currentEditingExpenseId = expenseId;
+                document.getElementById('expense-modal-title').textContent = "Editar Gasto";
+                document.getElementById('expense-concept').value = expense.concept;
+                document.getElementById('expense-amount').value = expense.amount;
+                document.getElementById('expense-description').value = expense.description;
+                expenseModal.classList.remove('hidden');
+            }
+
+            if (deleteBtn) {
+                if (confirm(`¿Estás seguro de que quieres eliminar el gasto "${expense.concept}"?`)) {
+                    deleteDoc(doc(db, "expenses", expenseId))
+                        .catch(err => {
+                            console.error("Error al eliminar gasto:", err);
+                            alert("No se pudo eliminar el gasto.");
+                        });
+                }
+            }
+        });
+      
+      
+      
+      
         
     </script>
   
@@ -3874,6 +4011,36 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         <div class="mt-6 flex justify-end">
             <button id="confirm-add-stock-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold text-sm">Guardar</button>
         </div>
+    </div>
+</div>
+          
+          <div id="expense-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="expense-modal-title" class="text-xl font-bold text-gray-800">Registrar Nuevo Gasto</h3>
+            <button id="close-expense-modal-btn" class="text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <form id="expense-form">
+            <div class="space-y-4">
+                <div>
+                    <label for="expense-concept" class="block text-sm font-medium text-gray-700">Concepto</label>
+                    <input type="text" id="expense-concept" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" placeholder="Ej: Pago de servicios" required>
+                </div>
+                <div>
+                    <label for="expense-amount" class="block text-sm font-medium text-gray-700">Monto</label>
+                    <input type="number" step="0.01" id="expense-amount" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" placeholder="Ej: 1500.00" required>
+                </div>
+                <div>
+                    <label for="expense-description" class="block text-sm font-medium text-gray-700">Descripción (Opcional)</label>
+                    <textarea id="expense-description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" placeholder="Ej: Pago de luz y agua del mes."></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold text-sm">Guardar Gasto</button>
+            </div>
+        </form>
     </div>
 </div>
 

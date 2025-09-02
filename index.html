@@ -989,6 +989,7 @@
             where, // <--- FUNCIÓN IMPORTADA
             getDocs, // <--- FUNCIÓN IMPORTADA
             orderBy, // <--- FUNCIÓN IMPORTADA
+            limit, // <--- FUNCIÓN IMPORTADA
             addDoc, // <--- FUNCIÓN IMPORTADA
             deleteDoc, // <--- FUNCIÓN IMPORTADA
             writeBatch // <-- AÑADE ESTA LÍNEA
@@ -1483,7 +1484,7 @@ const historyListContainer = document.getElementById('history-list-container');
           
              if (viewId === 'pos-view') {
                 renderInventory();
-                renderRecentSales();
+                // renderRecentSales();
                 renderRecentExpenses();
             }
 

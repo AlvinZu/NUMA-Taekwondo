@@ -3317,6 +3317,11 @@ closeExerciseDetailModalBtn.addEventListener('click', () => {
             if (!message.trim()) return;
 
             try {
+                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+                const expireAt = new Date();
+                expireAt.setDate(expireAt.getDate() + 1); // Caduca en 24 horas
+                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
+                
                 if (currentEditingNotificationId) {
                     // Actualizar notificación existente
                     const notificationRef = doc(db, "notifications", currentEditingNotificationId);
@@ -3327,8 +3332,10 @@ closeExerciseDetailModalBtn.addEventListener('click', () => {
                     await addDoc(collection(db, "notifications"), {
                         message: message,
                         createdAt: new Date(),
+                        expireAt: expireAt, // <-- AÑADE ESTA LÍNEA
                         sentBy: auth.currentUser.displayName || 'Admin',
-                        readBy: []
+                        readBy: [],
+                        type: 'global' // <-- Asegúrate de que esto también se guarda
                     });
                     alert("Notificación enviada a todos los alumnos.");
                 }
@@ -4996,9 +5003,16 @@ productManagementList.addEventListener('click', async (e) => {
                     
                     birthdayStudents.forEach(student => {
                         const notificationRef = doc(collection(db, "notifications"));
+                        
+            // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+            const expireAt = new Date();
+            expireAt.setDate(expireAt.getDate() + 1); // Caduca en 24 horas
+            // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
+                      
                         batch.set(notificationRef, {
                             message: `${student.name}, ¡Felicidades por tu cumpleaños! Sigue cumpliendo tus sueños.`,
                             createdAt: new Date(),
+                            expireAt: expireAt, // <-- AÑADE ESTA LÍNEA
                             sentBy: 'Sistema Automático',
                             readBy: [],
                             type: 'birthday', // Tipo de notificación para filtrado

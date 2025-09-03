@@ -140,6 +140,9 @@
                     </button>
                     <button id="pos-nav-btn" class="hidden"> <i class="fas fa-cash-register text-xl"></i>
     </button>
+                  <button id="videos-nav-btn" class="hidden">
+    <i class="fas fa-film text-xl"></i>
+</button>
                     <div class="relative">
                         <button id="profile-btn">
                             <i class="far fa-user-circle text-xl"></i>
@@ -575,6 +578,12 @@
           
           <div id="videos-view" class="hidden p-4 sm:p-6 pb-20">
     <h2 class="text-3xl font-bold text-gray-800 mb-6">Videoteca de Técnicas</h2>
+            <div id="admin-video-actions" class="hidden mb-6">
+        <button id="add-video-btn" class="w-full bg-red-600 text-white font-bold py-3 rounded-xl transition opacity-50 cursor-not-allowed" disabled>
+            <i class="fas fa-plus-circle mr-2"></i>Agregar Nuevo Video
+        </button>
+    </div>
+            
     <div id="video-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         </div>
 </div>
@@ -1116,12 +1125,15 @@
         let allNotifications = [];
         let unreadNotificationsCount = 0;
         let currentEditingNotificationId = null; // Saber si esta editando o creando
+        let currentUserRole = null;
+        let allVideos = [];
         let allCategories = [];
         let allProducts = [];
         let currentEditingProductId = null; // Para futura edición de productos
         let allExpenses = [];
         let currentEditingExpenseId = null;
         let cart = []; // Carrito de la venta actual
+        let currentEditingVideoId = null;
 
         const successSound = new Audio('Acceso_Concedido.mp3');
         const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -1236,6 +1248,11 @@ const historyListContainer = document.getElementById('history-list-container');
         const videoModalTitle = document.getElementById('video-modal-title');
         const youtubePlayer = document.getElementById('youtube-player');
         const closeVideoModalBtn = document.getElementById('close-video-modal-btn');
+        const videosNavBtn = document.getElementById('videos-nav-btn');
+        const addVideoBtn = document.getElementById('add-video-btn');
+        const videoFormModal = document.getElementById('video-form-modal');
+        const closeVideoFormBtn = document.getElementById('close-video-form-btn');
+        const videoForm = document.getElementById('video-form');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
         onAuthStateChanged(auth, async (user) => {
@@ -1275,6 +1292,8 @@ const historyListContainer = document.getElementById('history-list-container');
 });
 
         function setupUIForRole(role, user) {
+           currentUserRole = role;
+          
           // Ocultar todas las navegaciones primero
             adminNav.classList.add('hidden');
             studentNav.classList.add('hidden');
@@ -1286,6 +1305,7 @@ const historyListContainer = document.getElementById('history-list-container');
                 adminNav.classList.add('flex');
                 studentNav.classList.add('hidden');
                 posNavBtn.classList.remove('hidden'); 
+                videosNavBtn.classList.remove('hidden'); 
                 switchView('qr-scanner-view');
                 listenForStudentChanges();
                 listenForClassChanges();
@@ -1297,11 +1317,13 @@ const historyListContainer = document.getElementById('history-list-container');
                 listenForProductChanges();
                 listenForExpenseChanges();
                 listenForSalesChanges();
+                listenForVideoChanges();
             } else if (role === 'student') {
                 studentNav.classList.remove('hidden');
                 studentNav.classList.add('flex');
                 adminNav.classList.add('hidden');
                 posNavBtn.classList.add('hidden');
+                videosNavBtn.classList.add('hidden');
                 adminNotificationActions.classList.add('hidden'); // Oculta el botón
                 listenForNotifications(user.uid, 'student'); // escucha notif para alumno
                 
@@ -1582,6 +1604,16 @@ const historyListContainer = document.getElementById('history-list-container');
                 renderInventory();                 
                 renderRecentExpenses();
                 initializeIncomeCalculators(); 
+            }
+             
+            // Muestra/oculta los botones de admin en la vista de videos
+            if (viewId === 'videos-view') {
+                const adminActions = document.getElementById('admin-video-actions');
+                if (currentUserRole === 'admin') {
+                    adminActions.classList.remove('hidden');
+                } else {
+                    adminActions.classList.add('hidden');
+                }
             }
 
             // --- LÍNEA AÑADIDA ---
@@ -4505,10 +4537,22 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
       
       // Escucha cambios en la colección de videos
         function listenForVideoChanges() {
-            const q = query(collection(db, "videos"), orderBy("order"));
+            const q = query(collection(db, "videos")); 
             onSnapshot(q, (snapshot) => {
-                const videos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderVideosList(videos);
+                // La variable global 'allVideos' se actualiza con los datos recibidos
+                allVideos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Se dibuja la lista de videos en la pantalla
+                renderVideosList(allVideos);
+
+                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+                // Una vez que los datos están listos, activamos el botón de "Agregar Video".
+                const addVideoBtn = document.getElementById('add-video-btn');
+                if (addVideoBtn) {
+                    addVideoBtn.disabled = false;
+                    addVideoBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
             });
         }
 
@@ -4522,45 +4566,151 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
 
             videos.forEach(video => {
                 const videoCard = document.createElement('div');
-                videoCard.className = 'bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transform hover:-translate-y-1 transition-transform';
-                
-                // --- ✨ ESTA ES LA LÍNEA MÁGICA ---
-                // Genera la URL de la miniatura directamente desde el ID del video de YouTube.
+                videoCard.className = 'bg-white rounded-lg shadow-md overflow-hidden flex flex-col';
                 const thumbnailUrl = `https://img.youtube.com/vi/${video.videoUrl}/hqdefault.jpg`;
-
-                videoCard.innerHTML = `
-                    <img src="${thumbnailUrl}" alt="${video.title}" class="w-full h-40 object-cover">
-                    <div class="p-4">
+                
+                // Contenido principal de la tarjeta (imagen, título, descripción)
+                let cardContent = `
+                    <div class="relative cursor-pointer play-video-area">
+                        <img src="${thumbnailUrl}" alt="${video.title}" class="w-full h-40 object-cover">
+                        <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+                            <i class="fas fa-play-circle text-white text-5xl opacity-80"></i>
+                        </div>
+                    </div>
+                    <div class="p-4 flex-grow">
                         <h3 class="font-bold text-lg text-gray-800">${video.title}</h3>
                         <p class="text-sm text-gray-600 mt-1">${video.description}</p>
                     </div>
                 `;
+
+                // Si el usuario es admin, añade los botones de acción
+                if (currentUserRole === 'admin') {
+                    cardContent += `
+                        <div class="p-2 bg-gray-50 border-t flex justify-end space-x-3">
+                            <button class="text-blue-600 hover:text-blue-800 edit-video-btn" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="text-red-600 hover:text-red-800 delete-video-btn" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                }
+
+                videoCard.innerHTML = cardContent;
+                // Guardar datos en el elemento para usarlos al hacer clic
                 videoCard.dataset.videoId = video.videoUrl;
                 videoCard.dataset.title = video.title;
+                videoCard.dataset.docId = video.id; // <-- ID del documento para editar/eliminar
                 videoListContainer.appendChild(videoCard);
             });
         }
+      
+      
+      // Navegación desde el header de admin
+        videosNavBtn.addEventListener('click', () => switchView('videos-view'));
 
-        // Abre el modal y construye la URL de YouTube
-        videoListContainer.addEventListener('click', (e) => {
-            const card = e.target.closest('[data-video-id]');
-            if (card) {
-                const videoId = card.dataset.videoId;
-                const title = card.dataset.title;
+        // Abrir modal para AGREGAR un video
+        addVideoBtn.addEventListener('click', () => {
+            try {
+                currentEditingVideoId = null;
+                videoForm.reset();
+                document.getElementById('video-form-title').textContent = "Agregar Nuevo Video";
+
+                let nextOrder = 1; // Por defecto, el orden será 1
+
+                // Si la lista de videos existe y no está vacía, calculamos el siguiente número
+                if (allVideos && allVideos.length > 0) {
+                    // Encontramos el número de orden más alto que exista actualmente
+                    const highestOrder = Math.max(...allVideos.map(video => video.order || 0));
+                    nextOrder = highestOrder + 1;
+                }
                 
-                // Construye la URL especial "embed" de YouTube para reproducción
-                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-                
-                videoModalTitle.textContent = title;
-                youtubePlayer.src = embedUrl; // Asigna la URL al iframe
-                videoPlayerModal.classList.remove('hidden');
+                // Asignamos el número calculado al campo del formulario
+                document.getElementById('video-order').value = nextOrder;
+
+                // Finalmente, mostramos el modal
+                videoFormModal.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error al preparar el modal de nuevo video:", error);
+                alert("Ocurrió un error al abrir el formulario. Revisa la consola para más detalles.");
             }
         });
-
-        // Cierra el modal y detiene el video del iframe
+      
+      // Cierra el modal y detiene el video del iframe
         closeVideoModalBtn.addEventListener('click', () => {
             videoPlayerModal.classList.add('hidden');
             youtubePlayer.src = ''; // Limpiar la fuente detiene el video
+        });
+
+        // Cerrar el modal del formulario
+        closeVideoFormBtn.addEventListener('click', () => videoFormModal.classList.add('hidden'));
+
+        // Guardar (Crear o Actualizar) un video
+        videoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const videoData = {
+                title: document.getElementById('video-title').value,
+                videoUrl: document.getElementById('video-youtube-id').value,
+                description: document.getElementById('video-description').value,
+                order: parseInt(document.getElementById('video-order').value)
+            };
+
+            try {
+                if (currentEditingVideoId) {
+                    // Actualizar video existente
+                    await updateDoc(doc(db, "videos", currentEditingVideoId), videoData);
+                    alert("Video actualizado con éxito.");
+                } else {
+                    // Crear video nuevo
+                    await addDoc(collection(db, "videos"), videoData);
+                    alert("Video agregado con éxito.");
+                }
+                videoFormModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Error al guardar el video:", error);
+                alert("No se pudo guardar el video.");
+            }
+        });
+
+        // Listener principal en la lista de videos para Reproducir, Editar y Eliminar
+        videoListContainer.addEventListener('click', async (e) => {
+            const card = e.target.closest('[data-doc-id]');
+            if (!card) return;
+
+            const docId = card.dataset.docId;
+            const playArea = e.target.closest('.play-video-area');
+            const editBtn = e.target.closest('.edit-video-btn');
+            const deleteBtn = e.target.closest('.delete-video-btn');
+
+            if (playArea) {
+                const videoId = card.dataset.videoId;
+                const title = card.dataset.title;
+                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                videoModalTitle.textContent = title;
+                youtubePlayer.src = embedUrl;
+                videoPlayerModal.classList.remove('hidden');
+            } else if (editBtn) {
+                currentEditingVideoId = docId;
+                const videoDoc = await getDoc(doc(db, "videos", docId));
+                if (videoDoc.exists()) {
+                    const data = videoDoc.data();
+                    document.getElementById('video-title').value = data.title;
+                    document.getElementById('video-youtube-id').value = data.videoUrl;
+                    document.getElementById('video-description').value = data.description;
+                    document.getElementById('video-order').value = data.order;
+                    document.getElementById('video-form-title').textContent = "Editar Video";
+                    videoFormModal.classList.remove('hidden');
+                }
+            } else if (deleteBtn) {
+                const title = card.dataset.title;
+                if (confirm(`¿Estás seguro de que quieres eliminar el video "${title}"?`)) {
+                    try {
+                        await deleteDoc(doc(db, "videos", docId));
+                        alert("Video eliminado con éxito.");
+                    } catch (error) {
+                        console.error("Error al eliminar el video:", error);
+                        alert("No se pudo eliminar el video.");
+                    }
+                }
+            }
         });
       
       
@@ -4877,6 +5027,39 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                 <i class="fas fa-trash-alt mr-2"></i>Eliminar Venta
             </button>
         </div>
+    </div>
+</div>
+          
+          
+          <div id="video-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="video-form-title" class="text-xl font-bold text-gray-800">Agregar Nuevo Video</h3>
+            <button id="close-video-form-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-2xl"></i></button>
+        </div>
+        <form id="video-form">
+            <div class="space-y-4">
+                <div>
+                    <label for="video-title" class="block text-sm font-medium text-gray-700">Título del Video</label>
+                    <input type="text" id="video-title" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                </div>
+                <div>
+                    <label for="video-youtube-id" class="block text-sm font-medium text-gray-700">ID del Video de YouTube</label>
+                    <input type="text" id="video-youtube-id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" placeholder="Ej: zg-OlYzQTjM" required>
+                </div>
+                <div>
+                    <label for="video-description" class="block text-sm font-medium text-gray-700">Descripción</label>
+                    <textarea id="video-description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required></textarea>
+                </div>
+                <div>
+                    <label for="video-order" class="block text-sm font-medium text-gray-700">Orden de Visualización</label>
+                    <input type="number" id="video-order" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" placeholder="Ej: 1" value="100" required>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold text-sm">Guardar Video</button>
+            </div>
+        </form>
     </div>
 </div>
 

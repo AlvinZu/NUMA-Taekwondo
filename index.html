@@ -131,7 +131,7 @@
                     <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
                         <i class="fas fa-fist-raised text-red-600 text-xl"></i>
                     </div>
-                    <h1 class="text-xl font-bold">NUMA Taekwondo</h1>
+                    <h1 class="text-xl font-bold">Taekwondo</h1>
                 </div>
                 <div class="flex items-center space-x-3 relative">
                     <button id="notifications-btn" class="relative">
@@ -770,7 +770,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="mt-6 flex justify-end">
+                <div class="mt-6 flex justify-between items-center">
+                    <button type="button" id="manage-all-products-btn" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">
+        <i class="fas fa-list-ul mr-1"></i> Todos los Productos
+    </button>
                     <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold text-sm">Guardar Producto</button>
                 </div>
             </form>
@@ -1162,6 +1165,7 @@
         let currentUserRole = null;
         let allVideos = [];
         let allCategories = [];
+        const LOW_STOCK_THRESHOLD = 5;
         let allProducts = [];
         let currentEditingProductId = null; // Para futura edición de productos
         let allExpenses = [];
@@ -1958,52 +1962,74 @@ const historyListContainer = document.getElementById('history-list-container');
       
 
         // Función para cargar y mostrar los productos del inventario
-        async function renderInventory(category = 'all') {
-            const inventoryContainer = document.getElementById('inventory-list-container');
-            inventoryContainer.innerHTML = '<p class="text-gray-500">Cargando inventario...</p>';
+        async function renderInventory(categoryFilter = 'all') {
+            inventoryListContainer.innerHTML = '';
             
-            const productsRef = collection(db, "products");
-            let q;
+            const productsToDisplay = (categoryFilter === 'all')
+                ? allProducts
+                : allProducts.filter(p => p.categoryName === categoryFilter);
 
-            if (category === 'all') {
-                q = query(productsRef, orderBy("name"));
-            } else {
-                q = query(productsRef, where("categoryName", "==", category), orderBy("name"));
+            if (productsToDisplay.length === 0) {
+                inventoryListContainer.innerHTML = '<p class="text-gray-500 text-center">No hay productos que mostrar.</p>';
+                return;
             }
-            
-            try {
-                const querySnapshot = await getDocs(q);
-                if (querySnapshot.empty) {
-                    inventoryContainer.innerHTML = '<p class="text-center text-gray-600">No hay productos en esta categoría.</p>';
-                    return;
-                }
 
-                inventoryContainer.innerHTML = ''; // Limpiar
-                querySnapshot.forEach(doc => {
-                    const product = doc.data();
-                    const productEntry = document.createElement('div');
-                    productEntry.className = 'flex justify-between items-center p-3 border-b';
+            const productsByCategory = productsToDisplay.reduce((acc, product) => {
+                const category = product.categoryName || 'Sin Categoría';
+                if (!acc[category]) acc[category] = [];
+                acc[category].push(product);
+                return acc;
+            }, {});
+
+            for (const category in productsByCategory) {
+                const categoryWrapper = document.createElement('div');
+                let productsHTML = '';
+                productsByCategory[category].forEach(product => {
                     
-                    // --- INICIO DE LA MODIFICACIÓN ---
-                    // Ahora el stock es un botón clickeable
-                    productEntry.innerHTML = `
-                        <div>
-                            <p class="font-semibold">${product.name}</p>
-                            <div class="text-sm text-gray-500 mt-1">
-                                <button class="edit-stock-btn hover:bg-gray-200 p-1 rounded-md" data-id="${doc.id}">
-                                    En stock: <strong class="text-blue-600">${product.stock}</strong> <i class="fas fa-plus-circle text-xs text-blue-500 ml-1"></i>
-                                </button>
+                    // --- ✨ INICIO DE LA NUEVA LÓGICA DE ALERTA DE STOCK ✨ ---
+                    let stockInfoHtml = '';
+                    if (product.stock <= 0) {
+                        // Si el stock es CERO
+                        stockInfoHtml = `
+                            <button class="edit-stock-btn hover:bg-gray-200 p-1 rounded-md text-red-600 font-bold" data-id="${product.id}">
+                                SIN STOCK <i class="fas fa-exclamation-circle text-xs ml-1"></i>
+                            </button>
+                        `;
+                    } else if (product.stock <= LOW_STOCK_THRESHOLD) {
+                        // Si el stock está BAJO
+                        stockInfoHtml = `
+                            <button class="edit-stock-btn hover:bg-gray-200 p-1 rounded-md text-yellow-500" data-id="${product.id}">
+                                Stock: <strong class="font-bold">${product.stock}</strong> <i class="fas fa-exclamation-triangle text-xs ml-1" title="Stock bajo"></i>
+                            </button>
+                        `;
+                    } else {
+                        // Si el stock está NORMAL
+                        stockInfoHtml = `
+                            <button class="edit-stock-btn hover:bg-gray-200 p-1 rounded-md" data-id="${product.id}">
+                                Stock: <strong class="text-blue-600">${product.stock}</strong> <i class="fas fa-plus-circle text-xs text-blue-500 ml-1"></i>
+                            </button>
+                        `;
+                    }
+                    // --- ✨ FIN DE LA NUEVA LÓGICA ✨ ---
+
+                    productsHTML += `
+                        <div class="flex justify-between items-center p-3 border-b">
+                            <div>
+                                <p class="font-semibold">${product.name}</p>
+                                <div class="text-sm text-gray-500 mt-1">
+                                    ${stockInfoHtml}
+                                </div>
                             </div>
+                            <p class="font-bold text-gray-800 text-lg">$${product.price.toFixed(2)}</p>
                         </div>
-                        <p class="font-bold text-gray-800 text-lg">$${product.price.toFixed(2)}</p>
                     `;
-                    // --- FIN DE LA MODIFICACIÓN ---
-                    
-                    inventoryContainer.appendChild(productEntry);
                 });
-            } catch (error) {
-                console.error("Error al cargar inventario:", error);
-                inventoryContainer.innerHTML = '<p class="text-red-500">No se pudo cargar el inventario.</p>';
+
+                categoryWrapper.innerHTML = `
+                    <h4 class="font-bold text-md text-blue-600 mb-2">${category}</h4>
+                    <div class="space-y-2">${productsHTML}</div>
+                `;
+                inventoryListContainer.appendChild(categoryWrapper);
             }
         }
       
@@ -3317,16 +3343,20 @@ closeExerciseDetailModalBtn.addEventListener('click', () => {
         
         // Escuchar cambios en la colección de notificaciones
         function listenForNotifications(userId, userRole) {
-            const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
+            const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(50));
 
             onSnapshot(q, (snapshot) => {
-                allNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const allNotifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
+                // --- ✨ LÓGICA MEJORADA: Filtrar notificaciones ---
+                // Un usuario ahora ve las notificaciones 'globales' O las que tienen su ID como 'targetUid'.
+                const relevantNotifs = allNotifs.filter(n => n.type === 'global' || n.targetUid === userId);
+                
+                allNotifications = relevantNotifs; // Actualizamos la lista global con solo las relevantes
+
                 if (userRole === 'student') {
-                    // Contar cuántas no han sido leídas por el alumno actual
-                    unreadNotificationsCount = allNotifications.filter(n => !n.readBy.includes(userId)).length;
+                    unreadNotificationsCount = allNotifications.filter(n => !n.readBy || !n.readBy.includes(userId)).length;
                 } else {
-                    // Admins y entrenadores no tienen contador de "no leídas"
                     unreadNotificationsCount = 0;
                 }
                 
@@ -4502,6 +4532,32 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
             monthlyPicker.dispatchEvent(new Event('change'));
             setWeekPickers(new Date()); // Esto establece y calcula la semana actual
         }
+
+        // Funciones de ayuda para el cálculo de semanas
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return { year: d.getUTCFullYear(), week: weekNo };
+        }
+
+        function getDatesFromWeek(weekString) {
+            if (!weekString) return {};
+            const [year, week] = weekString.split('-W').map(Number);
+            const simple = new Date(year, 0, 1 + (week - 1) * 7);
+            const dow = simple.getDay();
+            const ISOweekStart = simple;
+            if (dow <= 4) ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+            else ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+            
+            const startOfWeek = new Date(ISOweekStart);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+
+            return { startOfWeek, endOfWeek };
+        }
       
       
        // --- NUEVAS FUNCIONES PARA EL CÁLCULO DE INGRESOS POR PAGOS ---
@@ -4791,6 +4847,176 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                 }
             }
         });
+      
+      
+      // --- LÓGICA PARA ADMINISTRAR TODOS LOS PRODUCTOS ---
+
+const manageAllProductsBtn = document.getElementById('manage-all-products-btn');
+const manageProductsModal = document.getElementById('manage-products-modal');
+const closeManageProductsModalBtn = document.getElementById('close-manage-products-modal-btn');
+const productManagementList = document.getElementById('product-management-list');
+
+// Abre el modal de administración de productos
+manageAllProductsBtn.addEventListener('click', () => {
+    productModal.classList.add('hidden'); // Cierra el modal de agregar producto
+    renderProductManagementList();
+    manageProductsModal.classList.remove('hidden');
+});
+
+// Cierra el modal de administración
+closeManageProductsModalBtn.addEventListener('click', () => {
+    manageProductsModal.classList.add('hidden');
+});
+
+// Dibuja la lista de productos en el modal de administración
+function renderProductManagementList() {
+    productManagementList.innerHTML = '';
+    if (allProducts.length === 0) {
+        productManagementList.innerHTML = '<p class="text-center text-gray-500">No hay productos para mostrar.</p>';
+        return;
+    }
+
+    allProducts.forEach(product => {
+        const productItem = document.createElement('div');
+        productItem.className = 'flex justify-between items-center p-3 border-b';
+        productItem.dataset.docId = product.id; // Guardamos el ID del documento
+
+        productItem.innerHTML = `
+            <div class="flex-grow">
+                <span class="font-semibold text-gray-800 product-name-text">${product.name}</span>
+                <p class="text-xs text-gray-500">Precio: $${product.price.toFixed(2)} | Stock: ${product.stock}</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="text-blue-500 hover:text-blue-700 edit-product-btn" title="Editar Nombre"><i class="fas fa-edit"></i></button>
+                <button class="text-red-500 hover:text-red-700 delete-product-btn" title="Eliminar Producto"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+        productManagementList.appendChild(productItem);
+    });
+}
+
+// Listener para manejar las acciones de Editar, Guardar y Eliminar
+productManagementList.addEventListener('click', async (e) => {
+    const productItem = e.target.closest('[data-doc-id]');
+    if (!productItem) return;
+
+    const docId = productItem.dataset.docId;
+    const editBtn = e.target.closest('.edit-product-btn');
+    const deleteBtn = e.target.closest('.delete-product-btn');
+    const saveBtn = e.target.closest('.save-product-btn');
+
+    // Lógica para EDITAR
+    if (editBtn) {
+        const nameSpan = productItem.querySelector('.product-name-text');
+        const currentName = nameSpan.textContent;
+        const flexContainer = productItem.querySelector('.flex-grow');
+        flexContainer.innerHTML = `<input type="text" class="border border-gray-300 rounded-md py-1 px-2 w-full product-name-input" value="${currentName}">`;
+        
+        editBtn.innerHTML = '<i class="fas fa-save"></i>';
+        editBtn.classList.remove('edit-product-btn', 'text-blue-500');
+        editBtn.classList.add('save-product-btn', 'text-green-500');
+        editBtn.title = "Guardar Nombre";
+        productItem.querySelector('.product-name-input').focus();
+    }
+
+    // Lógica para GUARDAR
+    if (saveBtn) {
+        const input = productItem.querySelector('.product-name-input');
+        const newName = input.value.trim();
+        if (newName) {
+            try {
+                await updateDoc(doc(db, "products", docId), { name: newName });
+                alert("Producto actualizado con éxito.");
+                // La lista se actualizará sola gracias al listener onSnapshot
+            } catch (error) {
+                console.error("Error al actualizar el producto:", error);
+                alert("No se pudo actualizar el producto.");
+            }
+        }
+    }
+
+    // Lógica para ELIMINAR
+    if (deleteBtn) {
+        const productName = productItem.querySelector('.product-name-text').textContent;
+        if (confirm(`¿Estás seguro de que quieres eliminar el producto "${productName}"?\nEsta acción no se puede deshacer.`)) {
+            try {
+                await deleteDoc(doc(db, "products", docId));
+                alert("Producto eliminado con éxito.");
+                // La lista se actualizará sola
+            } catch (error) {
+                console.error("Error al eliminar el producto:", error);
+                alert("No se pudo eliminar el producto.");
+            }
+        }
+    }
+});
+      
+      
+      // --- LÓGICA PARA VERIFICACIÓN Y ENVÍO DE NOTIFICACIONES DE CUMPLEAÑOS ---
+
+        async function checkAndSendBirthdayNotifications() {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0]; // Formato 'YYYY-MM-DD'
+
+            const checkRef = doc(db, "daily_tasks", "birthday_check");
+            
+            try {
+                const checkDoc = await getDoc(checkRef);
+
+                if (checkDoc.exists()) {
+                    const lastRunDate = checkDoc.data().lastRun.toDate().toISOString().split('T')[0];
+                    // Si ya se ejecutó hoy, no hacemos nada.
+                    if (lastRunDate === todayStr) {
+                        console.log("La verificación de cumpleaños ya se ejecutó hoy.");
+                        return;
+                    }
+                }
+
+                // Si no se ha ejecutado hoy, procedemos a buscar cumpleaños.
+                console.log("Ejecutando verificación de cumpleaños...");
+                const currentMonth = today.getMonth() + 1; // getMonth() es 0-11
+                const currentDay = today.getDate();
+
+                const birthdayStudents = allStudents.filter(student => {
+                    if (!student.fechaNacimiento) return false;
+                    // Aseguramos que la fecha tenga el formato correcto YYYY-MM-DD
+                    const birthDateParts = student.fechaNacimiento.split('-');
+                    if (birthDateParts.length !== 3) return false;
+                    
+                    const birthMonth = parseInt(birthDateParts[1]);
+                    const birthDay = parseInt(birthDateParts[2]);
+                    
+                    return birthMonth === currentMonth && birthDay === currentDay;
+                });
+
+                if (birthdayStudents.length > 0) {
+                    console.log(`Se encontraron ${birthdayStudents.length} cumpleaños hoy.`);
+                    // Preparamos un batch para crear todas las notificaciones en una sola operación
+                    const batch = writeBatch(db);
+                    
+                    birthdayStudents.forEach(student => {
+                        const notificationRef = doc(collection(db, "notifications"));
+                        batch.set(notificationRef, {
+                            message: `${student.name}, ¡Felicidades por tu cumpleaños! Sigue cumpliendo tus sueños.`,
+                            createdAt: new Date(),
+                            sentBy: 'Sistema Automático',
+                            readBy: [],
+                            type: 'birthday', // Tipo de notificación para filtrado
+                            targetUid: student.id // ID del alumno para que sea privada
+                        });
+                    });
+                    
+                    await batch.commit(); // Enviamos todas las notificaciones
+                }
+
+                // Finalmente, actualizamos el registro para no volver a ejecutarlo hoy.
+                await setDoc(checkRef, { lastRun: new Date() });
+
+            } catch (error) {
+                console.error("Error en la verificación de cumpleaños:", error);
+            }
+        }
+      
       
       
         
@@ -5139,6 +5365,18 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                 <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold text-sm">Guardar Video</button>
             </div>
         </form>
+    </div>
+</div>
+          
+          
+          <div id="manage-products-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 fade-in">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 slide-in flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 class="text-xl font-bold text-gray-800">Administrar Productos</h3>
+            <button id="close-manage-products-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-2xl"></i></button>
+        </div>
+        <div id="product-management-list" class="flex-grow overflow-y-auto space-y-2">
+            </div>
     </div>
 </div>
 

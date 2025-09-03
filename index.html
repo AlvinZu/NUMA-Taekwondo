@@ -1234,7 +1234,7 @@ const historyListContainer = document.getElementById('history-list-container');
         const videoListContainer = document.getElementById('video-list-container');
         const videoPlayerModal = document.getElementById('video-player-modal');
         const videoModalTitle = document.getElementById('video-modal-title');
-        const videoPlayer = document.getElementById('video-player');
+        const youtubePlayer = document.getElementById('youtube-player');
         const closeVideoModalBtn = document.getElementById('close-video-modal-btn');
 
         // --- Lógica de Autenticación y Sesión con Firebase ---
@@ -4531,21 +4531,24 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                     </div>
                 `;
                 // Guardar datos en el elemento para usarlos al hacer clic
-                videoCard.dataset.videoUrl = video.videoUrl;
+                videoCard.dataset.videoId = video.videoUrl;
                 videoCard.dataset.title = video.title;
                 videoListContainer.appendChild(videoCard);
             });
         }
 
-        // Abre el modal y reproduce el video al hacer clic en una tarjeta
+        // Abre el modal y construye la URL de YouTube
         videoListContainer.addEventListener('click', (e) => {
-            const card = e.target.closest('[data-video-url]');
+            const card = e.target.closest('[data-video-id]');
             if (card) {
-                const url = card.dataset.videoUrl;
+                const videoId = card.dataset.videoId;
                 const title = card.dataset.title;
                 
+                // Construye la URL especial "embed" de YouTube para reproducción
+                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                
                 videoModalTitle.textContent = title;
-                videoPlayer.src = url;
+                youtubePlayer.src = embedUrl; // Asigna la URL al iframe
                 videoPlayerModal.classList.remove('hidden');
             }
         });
@@ -4755,15 +4758,17 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
           
           
           <div id="video-player-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 fade-in">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl slide-in flex flex-col max-h-[90vh]">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl slide-in flex flex-col max-h-[90vh] overflow-hidden">
         <div class="flex justify-between items-center p-4 border-b">
             <h3 id="video-modal-title" class="text-xl font-bold text-gray-800"></h3>
             <button id="close-video-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-2xl"></i></button>
         </div>
         <div class="aspect-video bg-black">
-            <video id="video-player" class="w-full h-full" controls autoplay>
-                Tu navegador no soporta la etiqueta de video.
-            </video>
+            <iframe id="youtube-player" class="w-full h-full"
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+            </iframe>
         </div>
     </div>
 </div>

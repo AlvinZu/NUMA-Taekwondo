@@ -279,10 +279,27 @@
                         </div>
 
                         <div class="bg-white p-6 rounded-2xl shadow-lg">
-                            <label for="weekly-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Semana</label>
-                            <input type="week" id="weekly-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-4">
-                            <p id="weekly-income-total" class="text-4xl font-bold text-gray-800 text-center py-4">$0.00</p>
-                        </div>
+    <p class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Semana (Ventas)</p>
+    
+    <div class="flex items-center justify-between mb-2">
+        <button id="pos-prev-week-btn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">&lt; Ant</button>
+        <button id="pos-this-week-btn" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 text-sm">Esta Semana</button>
+        <button id="pos-next-week-btn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Sig &gt;</button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 mb-4 text-xs">
+        <div>
+            <label for="pos-weekly-start-picker" class="font-semibold text-gray-600">Desde:</label>
+            <input type="date" id="pos-weekly-start-picker" class="w-full border-gray-300 rounded-md shadow-sm">
+        </div>
+        <div>
+            <label for="pos-weekly-end-picker" class="font-semibold text-gray-600">Hasta:</label>
+            <input type="date" id="pos-weekly-end-picker" class="w-full border-gray-300 rounded-md shadow-sm">
+        </div>
+    </div>
+    
+    <p id="weekly-income-total" class="text-4xl font-bold text-gray-800 text-center py-4">$0.00</p>
+</div>
 
                         <div class="bg-white p-6 rounded-2xl shadow-lg">
                             <label for="monthly-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Mes</label>
@@ -444,8 +461,25 @@
 </div>
 
 <div class="bg-white p-6 rounded-2xl shadow-lg">
-    <label for="report-weekly-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Semana (Mensualidades)</label>
-    <input type="week" id="report-weekly-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-3">
+    <p class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Semana (Mensualidades)</p>
+    
+    <div class="flex items-center justify-between mb-2">
+        <button id="prev-week-btn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">&lt; Ant</button>
+        <button id="this-week-btn" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 text-sm">Esta Semana</button>
+        <button id="next-week-btn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Sig &gt;</button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 mb-3 text-xs">
+        <div>
+            <label for="report-weekly-start-picker" class="font-semibold text-gray-600">Desde:</label>
+            <input type="date" id="report-weekly-start-picker" class="w-full border-gray-300 rounded-md shadow-sm">
+        </div>
+        <div>
+            <label for="report-weekly-end-picker" class="font-semibold text-gray-600">Hasta:</label>
+            <input type="date" id="report-weekly-end-picker" class="w-full border-gray-300 rounded-md shadow-sm">
+        </div>
+    </div>
+    
     <p id="report-weekly-income-display" class="text-4xl font-bold text-gray-800 text-center py-2">$0.00</p>
 </div>
 
@@ -4385,76 +4419,88 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
 
         // Función para inicializar y manejar los listeners de los selectores de fecha
         function initializeIncomeCalculators() {
-            // -- Ingresos por Día --
-            const today = new Date().toISOString().split('T')[0];
-            dailyIncomePicker.value = today;
-            dailyIncomePicker.dispatchEvent(new Event('change')); // Dispara el evento para calcular hoy
+            // --- Selectores de Día y Mes ---
+            const dailyPicker = document.getElementById('daily-income-picker');
+            const monthlyPicker = document.getElementById('monthly-income-picker');
+            const dailyTotal = document.getElementById('daily-income-total');
+            const monthlyTotal = document.getElementById('monthly-income-total');
 
-            dailyIncomePicker.addEventListener('change', async () => {
-                const selectedDate = new Date(dailyIncomePicker.value + 'T00:00:00');
+            // --- NUEVOS Elementos para el Selector de Semana Universal ---
+            const weeklyStartPicker = document.getElementById('pos-weekly-start-picker');
+            const weeklyEndPicker = document.getElementById('pos-weekly-end-picker');
+            const weeklyTotal = document.getElementById('weekly-income-total');
+            const prevWeekBtn = document.getElementById('pos-prev-week-btn');
+            const nextWeekBtn = document.getElementById('pos-next-week-btn');
+            const thisWeekBtn = document.getElementById('pos-this-week-btn');
+
+            // --- Lógica de Ingresos por Día ---
+            dailyPicker.addEventListener('change', async () => {
+                const selectedDate = new Date(dailyPicker.value + 'T00:00:00');
                 const startOfDay = new Date(selectedDate);
                 const endOfDay = new Date(selectedDate);
                 endOfDay.setHours(23, 59, 59, 999);
                 
-                dailyIncomeTotal.textContent = "Calculando...";
+                dailyTotal.textContent = "Calculando...";
                 const income = await calculateIncomeForDateRange(startOfDay, endOfDay);
-                dailyIncomeTotal.textContent = `$${income.toFixed(2)}`;
+                dailyTotal.textContent = `$${income.toFixed(2)}`;
             });
-
-            // -- Ingresos por Semana --
-            const { year, week } = getWeekNumber(new Date());
-            weeklyIncomePicker.value = `${year}-W${week.toString().padStart(2, '0')}`;
-            weeklyIncomePicker.dispatchEvent(new Event('change'));
-
-            weeklyIncomePicker.addEventListener('change', async () => {
-                const { startOfWeek, endOfWeek } = getDatesFromWeek(weeklyIncomePicker.value);
-                if (!startOfWeek) return;
-
-                weeklyIncomeTotal.textContent = "Calculando...";
-                const income = await calculateIncomeForDateRange(startOfWeek, endOfWeek);
-                weeklyIncomeTotal.textContent = `$${income.toFixed(2)}`;
-            });
-
-            // -- Ingresos por Mes --
-            const currentMonth = new Date().toISOString().slice(0, 7);
-            monthlyIncomePicker.value = currentMonth;
-            monthlyIncomePicker.dispatchEvent(new Event('change'));
-
-            monthlyIncomePicker.addEventListener('change', async () => {
-                const [year, month] = monthlyIncomePicker.value.split('-').map(Number);
+            
+            // --- Lógica de Ingresos por Mes ---
+            monthlyPicker.addEventListener('change', async () => {
+                const [year, month] = monthlyPicker.value.split('-').map(Number);
                 const startOfMonth = new Date(year, month - 1, 1);
                 const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
-                monthlyIncomeTotal.textContent = "Calculando...";
+                monthlyTotal.textContent = "Calculando...";
                 const income = await calculateIncomeForDateRange(startOfMonth, endOfMonth);
-                monthlyIncomeTotal.textContent = `$${income.toFixed(2)}`;
+                monthlyTotal.textContent = `$${income.toFixed(2)}`;
             });
-        }
 
-        // Funciones de ayuda para el cálculo de semanas
-        function getWeekNumber(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return { year: d.getUTCFullYear(), week: weekNo };
-        }
+            // --- NUEVA Lógica de Ingresos Semanales Universal ---
+            const updateWeeklyReport = async () => {
+                const startDate = new Date(weeklyStartPicker.value + 'T00:00:00');
+                const endDate = new Date(weeklyEndPicker.value + 'T23:59:59');
+                
+                weeklyTotal.textContent = "Calculando...";
+                const income = await calculateIncomeForDateRange(startDate, endDate);
+                weeklyTotal.textContent = `$${income.toFixed(2)}`;
+            };
 
-        function getDatesFromWeek(weekString) {
-            if (!weekString) return {};
-            const [year, week] = weekString.split('-W').map(Number);
-            const simple = new Date(year, 0, 1 + (week - 1) * 7);
-            const dow = simple.getDay();
-            const ISOweekStart = simple;
-            if (dow <= 4) ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-            else ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+            const setWeekPickers = (date) => {
+                const dayOfWeek = date.getDay();
+                const startOfWeek = new Date(date);
+                startOfWeek.setDate(date.getDate() - dayOfWeek);
+                
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+                weeklyStartPicker.value = startOfWeek.toISOString().split('T')[0];
+                weeklyEndPicker.value = endOfWeek.toISOString().split('T')[0];
+                updateWeeklyReport();
+            };
+
+            prevWeekBtn.addEventListener('click', () => {
+                const currentDate = new Date(weeklyStartPicker.value + 'T00:00:00');
+                currentDate.setDate(currentDate.getDate() - 7);
+                setWeekPickers(currentDate);
+            });
+
+            nextWeekBtn.addEventListener('click', () => {
+                const currentDate = new Date(weeklyStartPicker.value + 'T00:00:00');
+                currentDate.setDate(currentDate.getDate() + 7);
+                setWeekPickers(currentDate);
+            });
             
-            const startOfWeek = new Date(ISOweekStart);
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            endOfWeek.setHours(23, 59, 59, 999);
+            thisWeekBtn.addEventListener('click', () => setWeekPickers(new Date()));
+            weeklyStartPicker.addEventListener('change', updateWeeklyReport);
+            weeklyEndPicker.addEventListener('change', updateWeeklyReport);
 
-            return { startOfWeek, endOfWeek };
+            // --- Establecer Valores por Defecto y Calcular al Cargar ---
+            dailyPicker.value = new Date().toISOString().split('T')[0];
+            monthlyPicker.value = new Date().toISOString().slice(0, 7);
+            dailyPicker.dispatchEvent(new Event('change'));
+            monthlyPicker.dispatchEvent(new Event('change'));
+            setWeekPickers(new Date()); // Esto establece y calcula la semana actual
         }
       
       
@@ -4463,7 +4509,6 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         // Función reutilizable para calcular ingresos de PAGOS en un rango de fechas
         async function calculatePaymentsIncomeForDateRange(startDate, endDate) {
             let totalIncome = 0;
-            // Iteramos sobre todos los alumnos para revisar sus subcolecciones de pagos
             const studentPromises = allStudents.map(async (student) => {
                 const paymentsRef = collection(db, "students", student.id, "pagos");
                 const q = query(paymentsRef, 
@@ -4487,49 +4532,83 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
 
         // Función para inicializar y manejar los listeners de los selectores de fecha de reportes
         function initializeReportsIncomeCalculators() {
+            // --- Selectores de fecha ---
             const dailyPicker = document.getElementById('report-daily-income-picker');
-            const weeklyPicker = document.getElementById('report-weekly-income-picker');
             const monthlyPicker = document.getElementById('report-monthly-income-picker');
             
-            // -- Ingresos por Día --
-            dailyPicker.value = new Date().toISOString().split('T')[0]; // Hoy por defecto
+            // --- NUEVOS selectores para la semana ---
+            const weeklyStartPicker = document.getElementById('report-weekly-start-picker');
+            const weeklyEndPicker = document.getElementById('report-weekly-end-picker');
+            const prevWeekBtn = document.getElementById('prev-week-btn');
+            const nextWeekBtn = document.getElementById('next-week-btn');
+            const thisWeekBtn = document.getElementById('this-week-btn');
+
+            // --- Lógica de cálculo y actualización ---
+            const updateWeeklyReport = async () => {
+                const startDate = new Date(weeklyStartPicker.value + 'T00:00:00');
+                const endDate = new Date(weeklyEndPicker.value + 'T23:59:59');
+                
+                document.getElementById('report-weekly-income-display').textContent = "Calculando...";
+                const income = await calculatePaymentsIncomeForDateRange(startDate, endDate);
+                document.getElementById('report-weekly-income-display').textContent = `$${income.toFixed(2)}`;
+            };
+
+            const setWeekPickers = (date) => {
+                const dayOfWeek = date.getDay(); // 0 = Domingo, 1 = Lunes...
+                const startOfWeek = new Date(date);
+                startOfWeek.setDate(date.getDate() - dayOfWeek); // Va al domingo de esa semana
+                
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6); // Va al sábado de esa semana
+
+                weeklyStartPicker.value = startOfWeek.toISOString().split('T')[0];
+                weeklyEndPicker.value = endOfWeek.toISOString().split('T')[0];
+                updateWeeklyReport();
+            };
+
+            // --- Event Listeners ---
+            
+            // Ingresos por Día
+            dailyPicker.value = new Date().toISOString().split('T')[0];
             dailyPicker.addEventListener('change', async () => {
                 const selectedDate = new Date(dailyPicker.value + 'T00:00:00');
-                const startOfDay = new Date(selectedDate);
-                const endOfDay = new Date(selectedDate);
-                endOfDay.setHours(23, 59, 59, 999);
-                
                 document.getElementById('report-daily-income-display').textContent = "Calculando...";
-                const income = await calculatePaymentsIncomeForDateRange(startOfDay, endOfDay);
+                const income = await calculatePaymentsIncomeForDateRange(selectedDate, new Date(selectedDate.getTime() + 86400000 - 1));
                 document.getElementById('report-daily-income-display').textContent = `$${income.toFixed(2)}`;
             });
             dailyPicker.dispatchEvent(new Event('change'));
 
-            // -- Ingresos por Semana --
-            const { year, week } = getWeekNumber(new Date());
-            weeklyPicker.value = `${year}-W${week.toString().padStart(2, '0')}`;
-            weeklyPicker.addEventListener('change', async () => {
-                const { startOfWeek, endOfWeek } = getDatesFromWeek(weeklyPicker.value);
-                if (!startOfWeek) return;
-
-                document.getElementById('report-weekly-income-display').textContent = "Calculando...";
-                const income = await calculatePaymentsIncomeForDateRange(startOfWeek, endOfWeek);
-                document.getElementById('report-weekly-income-display').textContent = `$${income.toFixed(2)}`;
-            });
-            weeklyPicker.dispatchEvent(new Event('change'));
-
-            // -- Ingresos por Mes --
+            // Ingresos por Mes
             monthlyPicker.value = new Date().toISOString().slice(0, 7);
             monthlyPicker.addEventListener('change', async () => {
                 const [year, month] = monthlyPicker.value.split('-').map(Number);
                 const startOfMonth = new Date(year, month - 1, 1);
                 const endOfMonth = new Date(year, month, 0, 23, 59, 59);
-
                 document.getElementById('report-monthly-income-display').textContent = "Calculando...";
                 const income = await calculatePaymentsIncomeForDateRange(startOfMonth, endOfMonth);
                 document.getElementById('report-monthly-income-display').textContent = `$${income.toFixed(2)}`;
             });
             monthlyPicker.dispatchEvent(new Event('change'));
+
+            // --- NUEVA Lógica para el Selector Semanal Universal ---
+            prevWeekBtn.addEventListener('click', () => {
+                const currentDate = new Date(weeklyStartPicker.value + 'T00:00:00');
+                currentDate.setDate(currentDate.getDate() - 7);
+                setWeekPickers(currentDate);
+            });
+
+            nextWeekBtn.addEventListener('click', () => {
+                const currentDate = new Date(weeklyStartPicker.value + 'T00:00:00');
+                currentDate.setDate(currentDate.getDate() + 7);
+                setWeekPickers(currentDate);
+            });
+
+            thisWeekBtn.addEventListener('click', () => setWeekPickers(new Date()));
+            weeklyStartPicker.addEventListener('change', updateWeeklyReport);
+            weeklyEndPicker.addEventListener('change', updateWeeklyReport);
+            
+            // Cargar la semana actual al iniciar
+            setWeekPickers(new Date()); 
         }
       
       

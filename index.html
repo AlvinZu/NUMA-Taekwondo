@@ -4553,11 +4553,10 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
             }
         });
 
-        // Cierra el modal y detiene el video
+        // Cierra el modal y detiene el video del iframe
         closeVideoModalBtn.addEventListener('click', () => {
             videoPlayerModal.classList.add('hidden');
-            videoPlayer.pause();
-            videoPlayer.src = ''; // Limpiar la fuente para detener la descarga
+            youtubePlayer.src = ''; // Limpiar la fuente detiene el video
         });
       
       

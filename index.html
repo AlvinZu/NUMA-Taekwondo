@@ -5025,11 +5025,55 @@ productManagementList.addEventListener('click', async (e) => {
 
                 // Finalmente, actualizamos el registro para no volver a ejecutarlo hoy.
                 await setDoc(checkRef, { lastRun: new Date() });
+              
+                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+                // Después de terminar la tarea de hoy, llamamos a la función de limpieza.
+                await cleanupOldBirthdayNotifications();
+                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
 
             } catch (error) {
                 console.error("Error en la verificación de cumpleaños:", error);
             }
         }
+      
+      
+// --- NUEVA FUNCIÓN PARA LIMPIAR NOTIFICACIONES ANTIGUAS DE CUMPLEAÑOS ---
+
+async function cleanupOldBirthdayNotifications() {
+    console.log("Iniciando limpieza de notificaciones de cumpleaños antiguas...");
+
+    // 1. Definimos la fecha límite (cualquier notificación creada antes de este momento será eliminada)
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 1); // Restamos 1 día (24 horas)
+
+    // 2. Creamos la consulta a la base de datos
+    const notificationsRef = collection(db, "notifications");
+    const q = query(notificationsRef, 
+        where("type", "==", "birthday"), // <-- Solo busca notificaciones de cumpleaños
+        where("createdAt", "<", cutoffDate) // <-- Que hayan sido creadas antes de la fecha límite
+    );
+
+    try {
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            console.log("No se encontraron notificaciones de cumpleaños antiguas para eliminar.");
+            return;
+        }
+
+        // 3. Usamos un "batch" para eliminar todas las notificaciones encontradas en una sola operación
+        const batch = writeBatch(db);
+        querySnapshot.forEach(doc => {
+            batch.delete(doc.ref); // Agregamos la eliminación al lote
+        });
+        
+        await batch.commit(); // Ejecutamos la eliminación
+        console.log(`Se eliminaron ${querySnapshot.size} notificaciones de cumpleaños antiguas.`);
+
+    } catch (error) {
+        console.error("Error durante la limpieza de notificaciones:", error);
+    }
+}
       
       
       

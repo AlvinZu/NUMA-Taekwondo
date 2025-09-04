@@ -4120,13 +4120,22 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
             });
         }
 
-        function populateSaleProductList() {
+        // Llenar los datos en el modal (Versión con filtro de búsqueda)
+        function populateSaleProductList(searchTerm = '') {
             saleProductList.innerHTML = '';
-            if (allProducts.length === 0) {
-                saleProductList.innerHTML = '<p class="text-sm text-center text-gray-500">No hay productos en el inventario.</p>';
+            
+            // Filtra los productos basándose en el término de búsqueda
+            const lowerCaseSearchTerm = searchTerm.toLowerCase();
+            const filteredProducts = allProducts.filter(product => 
+                product.name.toLowerCase().includes(lowerCaseSearchTerm)
+            );
+
+            if (filteredProducts.length === 0) {
+                saleProductList.innerHTML = '<p class="text-sm text-center text-gray-500">No se encontraron productos.</p>';
                 return;
             }
-            allProducts.forEach(product => {
+
+            filteredProducts.forEach(product => {
                 // Solo mostrar productos con stock
                 if (product.stock > 0) {
                     const productItem = document.createElement('div');
@@ -4143,6 +4152,14 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                 }
             });
         }
+      
+      // --- Listener para el buscador de productos en la venta ---
+        const saleProductSearchInput = document.getElementById('sale-product-search-input');
+        saleProductSearchInput.addEventListener('input', (e) => {
+            populateSaleProductList(e.target.value);
+        });
+      
+      
 
         // --- Lógica del Carrito de Compras ---
         saleProductList.addEventListener('click', (e) => {
@@ -5331,6 +5348,10 @@ async function cleanupOldBirthdayNotifications() {
                 </div>
 
                 <h4 class="font-semibold text-gray-700 mb-2">Productos Disponibles</h4>
+                <div class="relative mb-2">
+    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+    <input type="text" id="sale-product-search-input" placeholder="Buscar producto..." class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm">
+</div>
                 <div id="sale-product-list" class="flex-grow overflow-y-auto border rounded-md p-2 space-y-2 max-h-60 bg-gray-50">
                     </div>
             </div>

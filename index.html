@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#ef4444">
+    <meta name="theme-color" content="#ef4444"> 
     <title>NUMA Taekwondo</title>
     <link rel="icon" type="image/png" href="icon-192x192.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,7 +22,7 @@
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512x512.png">
     <link rel="manifest" href="manifest.json">
   
-    <style>
+    <style> 
         /* Estilos personalizados */
         .bottom-nav {
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
@@ -4682,20 +4682,22 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         function listenForVideoChanges() {
             const q = query(collection(db, "videos")); 
             onSnapshot(q, (snapshot) => {
-                // La variable global 'allVideos' se actualiza con los datos recibidos
-                allVideos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const videos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                // Se dibuja la lista de videos en la pantalla
+                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+                // Ordena el array de videos basándose en el campo 'order' de menor a mayor.
+                videos.sort((a, b) => (a.order || 999) - (b.order || 999));
+                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
+
+                allVideos = videos; // Actualizamos la variable global con la lista ya ordenada
+                
                 renderVideosList(allVideos);
 
-                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
-                // Una vez que los datos están listos, activamos el botón de "Agregar Video".
                 const addVideoBtn = document.getElementById('add-video-btn');
                 if (addVideoBtn) {
                     addVideoBtn.disabled = false;
                     addVideoBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 }
-                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
             });
         }
 
@@ -5038,7 +5040,7 @@ productManagementList.addEventListener('click', async (e) => {
         }
       
       
-// --- NUEVA FUNCIÓN PARA LIMPIAR NOTIFICACIONES ANTIGUAS DE CUMPLEAÑOS ---
+ // --- NUEVA FUNCIÓN PARA LIMPIAR NOTIFICACIONES ANTIGUAS DE CUMPLEAÑOS ---
 
 async function cleanupOldBirthdayNotifications() {
     console.log("Iniciando limpieza de notificaciones de cumpleaños antiguas...");
@@ -5462,4 +5464,4 @@ async function cleanupOldBirthdayNotifications() {
   
 </body>
 </html>
-
+  

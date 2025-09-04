@@ -5054,9 +5054,9 @@ productManagementList.addEventListener('click', async (e) => {
 async function cleanupOldBirthdayNotifications() {
     console.log("Iniciando limpieza de notificaciones de cumpleaños antiguas...");
 
-     // 1. En lugar de "hace 24 horas", definimos la fecha de corte como el inicio del día de hoy (medianoche).
+    // 1. Definimos la fecha límite (cualquier notificación creada antes de este momento será eliminada)
     const cutoffDate = new Date();
-    cutoffDate.setHours(0, 0, 0, 0);
+    cutoffDate.setDate(cutoffDate.getDate() - 1); // Restamos 1 día (24 horas)
 
     // 2. Creamos la consulta a la base de datos
     const notificationsRef = collection(db, "notifications");

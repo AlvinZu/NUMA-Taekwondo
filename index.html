@@ -5054,9 +5054,9 @@ productManagementList.addEventListener('click', async (e) => {
 async function cleanupOldBirthdayNotifications() {
     console.log("Iniciando limpieza de notificaciones de cumpleaños antiguas...");
 
-    // 1. Definimos la fecha límite (cualquier notificación creada antes de este momento será eliminada)
+     // 1. En lugar de "hace 24 horas", definimos la fecha de corte como el inicio del día de hoy (medianoche).
     const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 1); // Restamos 1 día (24 horas)
+    cutoffDate.setHours(0, 0, 0, 0);
 
     // 2. Creamos la consulta a la base de datos
     const notificationsRef = collection(db, "notifications");
@@ -5471,7 +5471,7 @@ async function cleanupOldBirthdayNotifications() {
             <button type="button" id="confirm-promotion-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Confirmar Promoción</button>
         </div>
     </div>
-</div>
+</div> 
 
   
   

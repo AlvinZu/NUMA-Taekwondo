@@ -1161,6 +1161,7 @@
         const LOW_STOCK_THRESHOLD = 5;
         let allProducts = [];
         let currentEditingProductId = null; // Para futura edición de productos
+        let allSales = [];
         let allExpenses = [];
         let currentEditingExpenseId = null;
         let cart = []; // Carrito de la venta actual
@@ -2070,52 +2071,66 @@ const historyListContainer = document.getElementById('history-list-container');
         cancelPaymentBtn.addEventListener('click', closePaymentModal);
 
         confirmPaymentBtn.addEventListener('click', async () => {
-    const studentDocRef = doc(db, "students", currentScannedStudentId);
-    
-    const newClass = changeClassSelect.value;
-    const paymentMethod = paymentMethodSelect.value;
-    const renewalDateValue = renewalDateInput.value;
-    const paymentAmount = parseFloat(renewalAmountInput.value);
-    
-    if (!renewalDateValue || !paymentAmount) {
-        alert("Por favor, completa todos los campos requeridos.");
-        return;
-    }
+            const studentDocRef = doc(db, "students", currentScannedStudentId);
+            const studentDocSnap = await getDoc(studentDocRef);
+            if (!studentDocSnap.exists()) {
+                alert("Error: No se encontró al alumno.");
+                return;
+            }
+            
+            const student = studentDocSnap.data();
+            const newClass = changeClassSelect.value;
+            const paymentMethod = paymentMethodSelect.value;
+            const renewalDateValue = renewalDateInput.value;
+            const paymentAmount = parseFloat(renewalAmountInput.value);
+            
+            if (!renewalDateValue || !paymentAmount) {
+                alert("Por favor, completa todos los campos requeridos.");
+                return;
+            }
 
-    const dateParts = renewalDateValue.split('-');
-    const newExpirationDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-    newExpirationDate.setDate(newExpirationDate.getDate() + 30);
-    
-    try {
-        // 1. Actualizar la fecha de vencimiento y clase en el documento principal del alumno
-        await updateDoc(studentDocRef, {
-            clase: newClass,
-            fechaVencimiento: newExpirationDate,
-            ultimoMontoPagado: paymentAmount,
-            ultimoMetodoPago: paymentMethod
+            const dateParts = renewalDateValue.split('-');
+            const newExpirationDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            newExpirationDate.setDate(newExpirationDate.getDate() + 30);
+            
+            try {
+                await updateDoc(studentDocRef, {
+                    clase: newClass,
+                    fechaVencimiento: newExpirationDate,
+                    ultimoMontoPagado: paymentAmount,
+                    ultimoMetodoPago: paymentMethod
+                });
+
+                const paymentsCollectionRef = collection(db, "students", currentScannedStudentId, "pagos");
+                await addDoc(paymentsCollectionRef, {
+                    fechaPago: new Date(),
+                    monto: paymentAmount,
+                    metodo: paymentMethod,
+                    tipo: 'Mensualidad',
+                    nuevaFechaVencimiento: newExpirationDate
+                });
+                
+                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+                // Se reemplaza el alert() por un confirm() que pregunta si se desea imprimir.
+                if (confirm(`Pago registrado para ${student.name}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.\n\n¿Deseas imprimir un recibo?`)) {
+                    const receiptData = {
+                        clientName: student.name,
+                        total: paymentAmount,
+                        concept: 'Pago de Mensualidad'
+                    };
+                    printReceipt(receiptData);
+                }
+                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
+                
+                closePaymentModal();
+                resetToScannerView();
+
+            } catch (error) {
+                console.error("Error al actualizar el pago:", error);
+                alert("Hubo un error al registrar el pago.");
+            }
         });
-
-        // 2. Crear un nuevo documento en la subcolección 'pagos'
-        const paymentsCollectionRef = collection(db, "students", currentScannedStudentId, "pagos");
-        await addDoc(paymentsCollectionRef, {
-            fechaPago: new Date(), // Guarda la fecha y hora actual del pago
-            monto: paymentAmount,
-            metodo: paymentMethod,
-            nuevaFechaVencimiento: newExpirationDate
-        });
-        
-        const studentDocSnap = await getDoc(studentDocRef);
-        const student = studentDocSnap.data();
-
-        alert(`Pago registrado para ${student.name}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.`);
-        
-        closePaymentModal();
-        resetToScannerView();
-    } catch (error) {
-        console.error("Error al actualizar el pago:", error);
-        alert("Hubo un error al registrar el pago.");
-    }
-});
+      
       
     // --- Lógica de Gestión de Ejercicios ---
     function listenForExerciseChanges() {
@@ -4264,7 +4279,7 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
             const student = allStudents.find(s => s.id === studentId);
 
             const saleData = {
-                items: cart,
+                items: cart.map(item => ({ name: item.name, price: item.price, quantity: item.quantity })),
                 total: total,
                 paymentMethod: document.getElementById('sale-payment-method').value,
                 studentId: studentId || null,
@@ -4272,14 +4287,10 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                 date: new Date()
             };
             
-            // Usar un batch para asegurar que todas las operaciones se completen o ninguna
             const batch = writeBatch(db);
-
-            // 1. Guardar el documento de la venta
             const salesRef = collection(db, "sales");
             batch.set(doc(salesRef), saleData);
 
-            // 2. Actualizar el stock de cada producto vendido
             cart.forEach(item => {
                 const productRef = doc(db, "products", item.id);
                 const product = allProducts.find(p => p.id === item.id);
@@ -4289,7 +4300,19 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
             
             try {
                 await batch.commit();
-                alert("¡Venta registrada con éxito!");
+
+                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+                // Se reemplaza el alert() por un confirm() que pregunta si se desea imprimir.
+                if (confirm("¡Venta registrada con éxito! ¿Deseas imprimir un recibo?")) {
+                    const receiptData = {
+                        clientName: saleData.studentName,
+                        total: saleData.total,
+                        items: saleData.items
+                    };
+                    printReceipt(receiptData);
+                }
+                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
+
                 newSaleModal.classList.add('hidden');
             } catch (error) {
                 console.error("Error al registrar la venta:", error);
@@ -4301,8 +4324,12 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         function listenForSalesChanges() {
             const q = query(collection(db, "sales"), orderBy("date", "desc"), limit(10));
             onSnapshot(q, (snapshot) => {
-                const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderRecentSales(sales);
+                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+                // Ahora guardamos las ventas en la variable global para poder usarlas después
+                allSales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Pasamos la variable local a la función de renderizado
+                renderRecentSales(allSales);
+                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
             });
         }
 
@@ -4358,16 +4385,21 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
             if (!saleContainer) return;
             const saleId = saleContainer.dataset.id;
             
-            const printBtn = e.target.closest('.print-sale-btn'); // <-- Buscamos el botón de imprimir
+            const printBtn = e.target.closest('.print-sale-btn');
             
             if (printBtn) {
                 const sale = allSales.find(s => s.id === saleId);
                 if (sale) {
+                    // --- ✨ INICIO DE LA CORRECCIÓN ✨ ---
+                    // Ajustamos los nombres de los campos para que coincidan con los datos guardados:
+                    // i.productName -> i.name
+                    // i.unitPrice   -> i.price
                     const receiptData = {
                         clientName: sale.studentName,
                         total: sale.total,
-                        items: sale.items.map(i => ({ name: i.productName, price: i.unitPrice, quantity: i.quantity }))
+                        items: sale.items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity }))
                     };
+                    // --- ✨ FIN DE LA CORRECCIÓN ✨ ---
                     printReceipt(receiptData);
                 }
             } else if (e.target.closest('.delete-sale-icon-btn')) {

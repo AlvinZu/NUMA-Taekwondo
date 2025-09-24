@@ -2480,43 +2480,65 @@ const paymentHistoryContainer = document.getElementById('payment-history-contain
 const paymentHistoryList = document.getElementById('payment-history-list');
 
 viewPaymentHistoryBtn.addEventListener('click', async () => {
-    paymentHistoryList.innerHTML = '<p class="text-sm text-gray-500">Cargando historial...</p>';
-    paymentHistoryContainer.classList.toggle('hidden');
+            paymentHistoryList.innerHTML = '<p class="text-sm text-gray-500">Cargando historial...</p>';
+            const isHidden = paymentHistoryContainer.classList.toggle('hidden');
 
-    // Si el contenedor se acaba de ocultar, no hacemos nada más.
-    if (paymentHistoryContainer.classList.contains('hidden')) {
-        return;
-    }
+            if (isHidden) return;
 
-    try {
-        const paymentsRef = collection(db, "students", currentViewedStudentId, "pagos");
-        // Ordenamos por fecha de pago para ver los más recientes primero
-        const q = query(paymentsRef, orderBy("fechaPago", "desc"));
-        const querySnapshot = await getDocs(q);
-        
-        if (querySnapshot.empty) {
-            paymentHistoryList.innerHTML = '<p class="text-sm text-gray-500">No hay pagos registrados.</p>';
-            return;
-        }
+            try {
+                const paymentsRef = collection(db, "students", currentViewedStudentId, "pagos");
+                const q = query(paymentsRef, orderBy("fechaPago", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    paymentHistoryList.innerHTML = '<p class="text-sm text-gray-500">No hay pagos registrados.</p>';
+                    return;
+                }
 
-        paymentHistoryList.innerHTML = ''; // Limpiamos el mensaje de "cargando"
-        querySnapshot.forEach((doc) => {
-            const payment = doc.data();
-            const paymentDate = payment.fechaPago.toDate();
+                paymentHistoryList.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const payment = doc.data();
+                    const paymentDate = payment.fechaPago.toDate();
+                    
+                    const paymentElement = document.createElement('div');
+                    paymentElement.className = 'flex justify-between items-center p-2 border-b text-sm';
+                    // Convertimos los datos a un string JSON para guardarlos en el botón
+                    const paymentDataString = JSON.stringify({
+                        date: paymentDate.toISOString(),
+                        amount: payment.monto,
+                        method: payment.metodo,
+                        type: payment.tipo || 'Mensualidad'
+                    });
 
-            const paymentElement = document.createElement('div');
-            paymentElement.className = 'p-2 border-b text-sm';
-            paymentElement.innerHTML = `
-                <p><strong>Fecha de Pago:</strong> ${formatCustomDate(paymentDate)}</p>
-                <p><strong>Monto:</strong> ${payment.monto}</p>
-                <p><strong>Método:</strong> ${payment.metodo}</p>
-            `;
-            paymentHistoryList.appendChild(paymentElement);
+                    paymentElement.innerHTML = `
+                        <div>
+                            <p><strong>${payment.tipo || 'Pago'}:</strong> $${payment.monto.toFixed(2)}</p>
+                            <p class="text-xs text-gray-500">${formatCustomDate(paymentDate)}</p>
+                        </div>
+                        <button class="text-gray-400 hover:text-blue-600 print-payment-btn" data-payment='${paymentDataString}' title="Imprimir Ticket">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    `;
+                    paymentHistoryList.appendChild(paymentElement);
+                });
+            } catch (error) {
+                console.error("Error al obtener historial de pagos:", error);
+                paymentHistoryList.innerHTML = '<p class="text-sm text-red-500">No se pudo cargar el historial.</p>';
+            }
         });
-
-    } catch (error) {
-        console.error("Error al obtener historial de pagos:", error);
-        paymentHistoryList.innerHTML = '<p class="text-sm text-red-500">No se pudo cargar el historial.</p>';
+      
+      paymentHistoryList.addEventListener('click', (e) => {
+    const printBtn = e.target.closest('.print-payment-btn');
+    if (printBtn) {
+        const studentName = document.getElementById('view-student-name').textContent;
+        const paymentData = JSON.parse(printBtn.dataset.payment);
+        
+        const receiptData = {
+            clientName: studentName,
+            total: paymentData.amount,
+            concept: paymentData.type
+        };
+        printReceipt(receiptData);
     }
 });
       
@@ -4295,8 +4317,7 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                 const formattedDate = saleDate.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
                 
                 const saleItem = document.createElement('div');
-                // AÑADIMOS data-id y clases para hacerlo interactivo
-                saleItem.className = 'flex justify-between items-center p-3 border-b hover:bg-gray-50';
+                saleItem.className = 'flex justify-between items-center p-3 border-b';
                 saleItem.setAttribute('data-id', sale.id);
 
                 saleItem.innerHTML = `
@@ -4306,6 +4327,9 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
                     </div>
                     <div class="flex items-center space-x-3">
                         <p class="font-bold text-green-600 text-lg">$${sale.total.toFixed(2)}</p>
+                        <button class="text-gray-400 hover:text-blue-600 print-sale-btn" title="Imprimir Ticket">
+                            <i class="fas fa-print"></i>
+                        </button>
                         <button class="text-gray-400 hover:text-red-600 delete-sale-icon-btn text-lg" title="Eliminar Venta">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -4332,19 +4356,28 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
         recentSalesContainer.addEventListener('click', async (e) => {
             const saleContainer = e.target.closest('[data-id]');
             if (!saleContainer) return;
-
             const saleId = saleContainer.dataset.id;
             
-            // Si se hizo clic en el botón de eliminar
-            if (e.target.closest('.delete-sale-icon-btn')) {
+            const printBtn = e.target.closest('.print-sale-btn'); // <-- Buscamos el botón de imprimir
+            
+            if (printBtn) {
+                const sale = allSales.find(s => s.id === saleId);
+                if (sale) {
+                    const receiptData = {
+                        clientName: sale.studentName,
+                        total: sale.total,
+                        items: sale.items.map(i => ({ name: i.productName, price: i.unitPrice, quantity: i.quantity }))
+                    };
+                    printReceipt(receiptData);
+                }
+            } else if (e.target.closest('.delete-sale-icon-btn')) {
                 handleDeleteSale(saleId);
-            } 
-            // Si se hizo clic en el área principal para ver detalles
-            else if (e.target.closest('.view-sale-details')) {
+            } else if (e.target.closest('.view-sale-details')) {
                 currentViewingSaleId = saleId;
                 await showSaleDetails(saleId);
             }
         });
+      
 
         async function showSaleDetails(saleId) {
             saleDetailsContent.innerHTML = '<p class="text-gray-500">Cargando detalles...</p>';
@@ -5085,6 +5118,85 @@ async function cleanupOldBirthdayNotifications() {
     } catch (error) {
         console.error("Error durante la limpieza de notificaciones:", error);
     }
+}
+      
+      
+      // --- LÓGICA PARA IMPRESIÓN DE TICKETS (MÉTODO SENCILLO) ---
+
+function printReceipt(receiptData) {
+    // 1. Crear el contenido HTML del ticket
+    let itemsHtml = '';
+    if (receiptData.items && receiptData.items.length > 0) {
+        receiptData.items.forEach(item => {
+            const itemTotal = (item.price * item.quantity).toFixed(2);
+            itemsHtml += `
+                <tr>
+                    <td>${item.quantity}x ${item.name}</td>
+                    <td style="text-align: right;">$${itemTotal}</td>
+                </tr>
+            `;
+        });
+    } else {
+        // Para pagos de mensualidad que no tienen "items"
+        itemsHtml = `
+            <tr>
+                <td>${receiptData.concept}</td>
+                <td style="text-align: right;">$${receiptData.total.toFixed(2)}</td>
+            </tr>
+        `;
+    }
+
+    const receiptHtml = `
+        <html>
+        <head>
+            <title>Recibo</title>
+            <style>
+                body { 
+                    font-family: 'Courier New', Courier, monospace; 
+                    width: 58mm; 
+                    font-size: 10px;
+                    padding: 5px;
+                    box-sizing: border-box;
+                }
+                .header { text-align: center; margin-bottom: 10px; }
+                .header h3 { margin: 0; font-size: 14px; }
+                .info p { margin: 2px 0; }
+                table { width: 100%; border-collapse: collapse; }
+                .total { font-weight: bold; font-size: 12px; border-top: 1px dashed black; padding-top: 5px; margin-top: 5px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h3>NUMA Taekwondo</h3>
+                <p>Gracias por su preferencia</p>
+            </div>
+            <div class="info">
+                <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-MX')}</p>
+                <p><strong>Cliente:</strong> ${receiptData.clientName}</p>
+            </div>
+            <hr>
+            <table>
+                ${itemsHtml}
+            </table>
+            <hr>
+            <table class="total">
+                <tr>
+                    <td>TOTAL:</td>
+                    <td style="text-align: right;">$${receiptData.total.toFixed(2)}</td>
+                </tr>
+            </table>
+            <p style="text-align: center; margin-top: 10px;">¡Vuelva pronto!</p>
+        </body>
+        </html>
+    `;
+
+    // 2. Abrir una nueva ventana, escribir el HTML e invocar la impresión
+    const printWindow = window.open('', '', 'height=500,width=300');
+    printWindow.document.write(receiptHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
 }
       
       

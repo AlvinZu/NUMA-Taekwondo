@@ -2071,10 +2071,21 @@ const historyListContainer = document.getElementById('history-list-container');
         cancelPaymentBtn.addEventListener('click', closePaymentModal);
 
         confirmPaymentBtn.addEventListener('click', async () => {
+            // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+            // 1. Abrimos la ventana emergente INMEDIATAMENTE. Estará en blanco por ahora.
+            const printWindow = window.open('', 'Recibo', 'height=500,width=300');
+            if (!printWindow) {
+                alert("Por favor, permite las ventanas emergentes para este sitio para poder imprimir recibos.");
+                return;
+            }
+            printWindow.document.write('<html><body><p>Procesando pago, por favor espera...</p></body></html>');
+            // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
+
             const studentDocRef = doc(db, "students", currentScannedStudentId);
             const studentDocSnap = await getDoc(studentDocRef);
             if (!studentDocSnap.exists()) {
                 alert("Error: No se encontró al alumno.");
+                printWindow.close(); // Cerramos la ventana si hay un error
                 return;
             }
             
@@ -2086,6 +2097,7 @@ const historyListContainer = document.getElementById('history-list-container');
             
             if (!renewalDateValue || !paymentAmount) {
                 alert("Por favor, completa todos los campos requeridos.");
+                printWindow.close(); // Cerramos la ventana si hay un error
                 return;
             }
 
@@ -2110,17 +2122,18 @@ const historyListContainer = document.getElementById('history-list-container');
                     nuevaFechaVencimiento: newExpirationDate
                 });
                 
-                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
-                // Se reemplaza el alert() por un confirm() que pregunta si se desea imprimir.
-                if (confirm(`Pago registrado para ${student.name}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.\n\n¿Deseas imprimir un recibo?`)) {
+                if (confirm(`Pago registrado para ${student.name}.\n\n¿Deseas imprimir un recibo?`)) {
                     const receiptData = {
                         clientName: student.name,
                         total: paymentAmount,
-                        concept: 'Pago de Mensualidad'
+                        concept: 'Pago de Mensualualidad'
                     };
-                    printReceipt(receiptData);
+                    // 2. En lugar de crear una nueva ventana, usamos la que ya abrimos.
+                    printReceipt(receiptData, printWindow); 
+                } else {
+                    // 3. Si el usuario no quiere imprimir, simplemente cerramos la ventana vacía.
+                    printWindow.close();
                 }
-                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
                 
                 closePaymentModal();
                 resetToScannerView();
@@ -2128,6 +2141,7 @@ const historyListContainer = document.getElementById('history-list-container');
             } catch (error) {
                 console.error("Error al actualizar el pago:", error);
                 alert("Hubo un error al registrar el pago.");
+                printWindow.close(); // Cerramos la ventana si hay un error
             }
         });
       

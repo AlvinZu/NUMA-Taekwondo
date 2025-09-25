@@ -116,6 +116,11 @@
                         <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
                         <input type="password" id="password" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500" required>
                     </div>
+                  <div class="text-right">
+    <button type="button" id="forgot-password-btn" class="text-sm text-blue-600 hover:underline focus:outline-none">
+        ¿Olvidaste tu contraseña?
+    </button>
+</div>
                 </div>
                 <p id="login-error" class="text-red-500 text-sm mt-2 hidden">Correo o contraseña incorrectos.</p>
                 <div class="mt-6 space-y-3">
@@ -1092,7 +1097,8 @@
             onAuthStateChanged, 
             signInWithEmailAndPassword, 
             createUserWithEmailAndPassword,
-            signOut 
+            signOut,
+            sendPasswordResetEmail
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { 
             getFirestore, 
@@ -5208,6 +5214,34 @@ async function cleanupOldBirthdayNotifications() {
         console.error("Error durante la limpieza de notificaciones:", error);
     }
 }
+      
+      
+// --- LÓGICA PARA RESTABLECER LA CONTRASEÑA ---
+const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+
+forgotPasswordBtn.addEventListener('click', () => {
+    const emailInput = document.getElementById('email');
+    const email = emailInput.value;
+
+    if (!email) {
+        alert("Por favor, introduce tu dirección de correo electrónico en el campo de arriba para restablecer tu contraseña.");
+        emailInput.focus();
+        return;
+    }
+
+    sendPasswordResetEmail(auth, email)
+        .then(() => {
+            alert("Se ha enviado un correo para restablecer tu contraseña. Revisa tu bandeja de entrada (y la carpeta de spam).");
+        })
+        .catch((error) => {
+            console.error("Error al enviar correo de restablecimiento:", error);
+            if (error.code === 'auth/user-not-found') {
+                alert("El correo electrónico no se encontró en nuestro sistema. Por favor, verifica que esté bien escrito.");
+            } else {
+                alert("Ocurrió un error al intentar enviar el correo. Inténtalo de nuevo.");
+            }
+        });
+});
       
       
       // --- LÓGICA PARA IMPRESIÓN DE TICKETS (MÉTODO SENCILLO) ---

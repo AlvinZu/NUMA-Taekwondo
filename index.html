@@ -269,39 +269,30 @@
     </div>
 
     <div class="mt-8 pt-8 border-t">
-        <h3 class="text-2xl font-bold text-blue-600 text-center mb-6">Análisis de Ingresos</h3>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-2xl shadow-lg">
-                <label for="daily-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Día</label>
-                <input type="date" id="daily-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-4">
-                <p id="daily-income-total" class="text-4xl font-bold text-gray-800 text-center py-4">$0.00</p>
+    <h3 class="text-2xl font-bold text-blue-600 text-center mb-6">Análisis Financiero</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <div class="bg-white p-6 rounded-2xl shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-lg font-bold text-gray-800">Reporte del Día</h4>
+                <input type="date" id="daily-report-picker" class="border-gray-300 rounded-md shadow-sm text-sm">
             </div>
-            <div class="bg-white p-6 rounded-2xl shadow-lg">
-                <p class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Semana (Ventas)</p>
-                <div class="flex items-center justify-between mb-2">
-                    <button id="pos-prev-week-btn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">&lt; Ant</button>
-                    <button id="pos-this-week-btn" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 text-sm">Esta Semana</button>
-                    <button id="pos-next-week-btn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Sig &gt;</button>
+            <div id="daily-report-breakdown" class="space-y-2 text-sm">
                 </div>
-                <div class="grid grid-cols-2 gap-2 mb-4 text-xs">
-                    <div>
-                        <label for="pos-weekly-start-picker" class="font-semibold text-gray-600">Desde:</label>
-                        <input type="date" id="pos-weekly-start-picker" class="w-full border-gray-300 rounded-md shadow-sm">
-                    </div>
-                    <div>
-                        <label for="pos-weekly-end-picker" class="font-semibold text-gray-600">Hasta:</label>
-                        <input type="date" id="pos-weekly-end-picker" class="w-full border-gray-300 rounded-md shadow-sm">
-                    </div>
-                </div>
-                <p id="weekly-income-total" class="text-4xl font-bold text-gray-800 text-center py-4">$0.00</p>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-lg">
-                <label for="monthly-income-picker" class="block text-sm font-medium text-gray-500 mb-2">Ingresos por Mes</label>
-                <input type="month" id="monthly-income-picker" class="w-full border-gray-300 rounded-md shadow-sm mb-4">
-                <p id="monthly-income-total" class="text-4xl font-bold text-gray-800 text-center py-4">$0.00</p>
-            </div>
         </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-lg font-bold text-gray-800">Reporte del Mes</h4>
+                <input type="month" id="monthly-report-picker" class="border-gray-300 rounded-md shadow-sm text-sm">
+            </div>
+            <div id="monthly-report-breakdown" class="space-y-2 text-sm">
+                </div>
+        </div>
+
     </div>
+</div>
+              
     </div>
           
 
@@ -1635,7 +1626,7 @@ const historyListContainer = document.getElementById('history-list-container');
              if (viewId === 'pos-view') {
                 renderInventory();                 
                 renderRecentExpenses();
-                initializeIncomeCalculators(); 
+                initializePosReports(); 
             }
              
             // Muestra/oculta los botones de admin en la vista de videos
@@ -4522,112 +4513,115 @@ document.getElementById('confirm-promotion-btn').addEventListener('click', async
       
        // --- NUEVAS FUNCIONES PARA EL CÁLCULO DE INGRESOS ---
 
-        // Función reutilizable para calcular ingresos en un rango de fechas
-        async function calculateIncomeForDateRange(startDate, endDate) {
-            let totalIncome = 0;
-            const salesRef = collection(db, "sales");
-            const q = query(salesRef, 
-                where("date", ">=", startDate), 
-                where("date", "<=", endDate)
-            );
-            
-            try {
-                const querySnapshot = await getDocs(q);
-                querySnapshot.forEach(doc => {
-                    totalIncome += doc.data().total;
-                });
-                return totalIncome;
-            } catch (error) {
-                console.error("Error calculando ingresos:", error);
-                return 0; // Devuelve 0 si hay un error
-            }
+        // --- NUEVO SISTEMA DE ANÁLISIS FINANCIERO (POS) ---
+
+async function getSalesForDateRange(startDate, endDate) {
+    const q = query(collection(db, "sales"), where("date", ">=", startDate), where("date", "<=", endDate));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => doc.data());
+}
+
+async function getExpensesForDateRange(startDate, endDate) {
+    const q = query(collection(db, "expenses"), where("date", ">=", startDate), where("date", "<=", endDate));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => doc.data());
+}
+
+async function generateFinancialReport(periodType, startDate, endDate) {
+    const breakdownContainer = document.getElementById(`${periodType}-report-breakdown`);
+    breakdownContainer.innerHTML = '<p class="text-gray-500 text-center">Calculando...</p>';
+
+    try {
+        const [sales, expenses] = await Promise.all([
+            getSalesForDateRange(startDate, endDate),
+            getExpensesForDateRange(startDate, endDate)
+        ]);
+
+        // 1. Calcular desglose de ventas por categoría
+        const categoryTotals = {};
+        allCategories.forEach(cat => { categoryTotals[cat.name] = 0; });
+
+        sales.forEach(sale => {
+            sale.items.forEach(item => {
+                const productDetails = allProducts.find(p => p.name === item.name);
+                if (productDetails && categoryTotals.hasOwnProperty(productDetails.categoryName)) {
+                    categoryTotals[productDetails.categoryName] += item.price * item.quantity;
+                }
+            });
+        });
+
+        let salesBreakdownHtml = '<h5 class="font-bold border-b pb-1">Ventas por Categoría</h5>';
+        let salesSubtotal = 0;
+        for (const categoryName in categoryTotals) {
+            salesBreakdownHtml += `
+                <div class="flex justify-between">
+                    <span>${categoryName}:</span>
+                    <span>$${categoryTotals[categoryName].toFixed(2)}</span>
+                </div>
+            `;
+            salesSubtotal += categoryTotals[categoryName];
         }
 
-        // Función para inicializar y manejar los listeners de los selectores de fecha
-        function initializeIncomeCalculators() {
-            // --- Selectores de Día y Mes ---
-            const dailyPicker = document.getElementById('daily-income-picker');
-            const monthlyPicker = document.getElementById('monthly-income-picker');
-            const dailyTotal = document.getElementById('daily-income-total');
-            const monthlyTotal = document.getElementById('monthly-income-total');
+        // 2. Calcular total de gastos
+        const expensesTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
-            // --- NUEVOS Elementos para el Selector de Semana Universal ---
-            const weeklyStartPicker = document.getElementById('pos-weekly-start-picker');
-            const weeklyEndPicker = document.getElementById('pos-weekly-end-picker');
-            const weeklyTotal = document.getElementById('weekly-income-total');
-            const prevWeekBtn = document.getElementById('pos-prev-week-btn');
-            const nextWeekBtn = document.getElementById('pos-next-week-btn');
-            const thisWeekBtn = document.getElementById('pos-this-week-btn');
+        // 3. Calcular total real (Ganancia Neta)
+        const netTotal = salesSubtotal - expensesTotal;
 
-            // --- Lógica de Ingresos por Día ---
-            dailyPicker.addEventListener('change', async () => {
-                const selectedDate = new Date(dailyPicker.value + 'T00:00:00');
-                const startOfDay = new Date(selectedDate);
-                const endOfDay = new Date(selectedDate);
-                endOfDay.setHours(23, 59, 59, 999);
-                
-                dailyTotal.textContent = "Calculando...";
-                const income = await calculateIncomeForDateRange(startOfDay, endOfDay);
-                dailyTotal.textContent = `$${income.toFixed(2)}`;
-            });
-            
-            // --- Lógica de Ingresos por Mes ---
-            monthlyPicker.addEventListener('change', async () => {
-                const [year, month] = monthlyPicker.value.split('-').map(Number);
-                const startOfMonth = new Date(year, month - 1, 1);
-                const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+        // 4. Construir el HTML final y mostrarlo
+        breakdownContainer.innerHTML = `
+            ${salesBreakdownHtml}
+            <div class="flex justify-between font-bold text-base border-t pt-2 mt-2">
+                <span>Subtotal Ventas:</span>
+                <span class="text-green-600">$${salesSubtotal.toFixed(2)}</span>
+            </div>
+            <div class="flex justify-between font-bold text-base mt-4 border-b pb-1">
+                <h5>Gastos del Periodo</h5>
+            </div>
+            <div class="flex justify-between">
+                <span>Total Gastos:</span>
+                <span class="text-red-500">-$${expensesTotal.toFixed(2)}</span>
+            </div>
+            <div class="flex justify-between font-bold text-lg text-white bg-gray-800 p-2 rounded-md mt-4">
+                <span>GANANCIA NETA:</span>
+                <span>$${netTotal.toFixed(2)}</span>
+            </div>
+        `;
 
-                monthlyTotal.textContent = "Calculando...";
-                const income = await calculateIncomeForDateRange(startOfMonth, endOfMonth);
-                monthlyTotal.textContent = `$${income.toFixed(2)}`;
-            });
+    } catch (error) {
+        console.error(`Error al generar el reporte ${periodType}:`, error);
+        breakdownContainer.innerHTML = '<p class="text-red-500 text-center">Error al cargar el reporte.</p>';
+    }
+}
 
-            // --- NUEVA Lógica de Ingresos Semanales Universal ---
-            const updateWeeklyReport = async () => {
-                const startDate = new Date(weeklyStartPicker.value + 'T00:00:00');
-                const endDate = new Date(weeklyEndPicker.value + 'T23:59:59');
-                
-                weeklyTotal.textContent = "Calculando...";
-                const income = await calculateIncomeForDateRange(startDate, endDate);
-                weeklyTotal.textContent = `$${income.toFixed(2)}`;
-            };
+function initializePosReports() {
+    const dailyPicker = document.getElementById('daily-report-picker');
+    const monthlyPicker = document.getElementById('monthly-report-picker');
 
-            const setWeekPickers = (date) => {
-                const dayOfWeek = date.getDay();
-                const startOfWeek = new Date(date);
-                startOfWeek.setDate(date.getDate() - dayOfWeek);
-                
-                const endOfWeek = new Date(startOfWeek);
-                endOfWeek.setDate(startOfWeek.getDate() + 6);
+    dailyPicker.addEventListener('change', () => {
+        const selectedDate = new Date(dailyPicker.value + 'T00:00:00');
+        const startOfDay = new Date(selectedDate);
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        generateFinancialReport('daily', startOfDay, endOfDay);
+    });
 
-                weeklyStartPicker.value = startOfWeek.toISOString().split('T')[0];
-                weeklyEndPicker.value = endOfWeek.toISOString().split('T')[0];
-                updateWeeklyReport();
-            };
+    monthlyPicker.addEventListener('change', () => {
+        if (!monthlyPicker.value) return;
+        const [year, month] = monthlyPicker.value.split('-').map(Number);
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+        generateFinancialReport('monthly', startOfMonth, endOfMonth);
+    });
 
-            prevWeekBtn.addEventListener('click', () => {
-                const currentDate = new Date(weeklyStartPicker.value + 'T00:00:00');
-                currentDate.setDate(currentDate.getDate() - 7);
-                setWeekPickers(currentDate);
-            });
+    // Cargar reportes del día y mes actual por defecto
+    dailyPicker.value = new Date().toISOString().split('T')[0];
+    monthlyPicker.value = new Date().toISOString().slice(0, 7);
+    dailyPicker.dispatchEvent(new Event('change'));
+    monthlyPicker.dispatchEvent(new Event('change'));
+}
 
-            nextWeekBtn.addEventListener('click', () => {
-                const currentDate = new Date(weeklyStartPicker.value + 'T00:00:00');
-                currentDate.setDate(currentDate.getDate() + 7);
-                setWeekPickers(currentDate);
-            });
-            
-            thisWeekBtn.addEventListener('click', () => setWeekPickers(new Date()));
-            weeklyStartPicker.addEventListener('change', updateWeeklyReport);
-            weeklyEndPicker.addEventListener('change', updateWeeklyReport);
-
-            // --- Establecer Valores por Defecto y Calcular al Cargar ---
-            dailyPicker.value = new Date().toISOString().split('T')[0];
-            monthlyPicker.value = new Date().toISOString().slice(0, 7);
-            dailyPicker.dispatchEvent(new Event('change'));
-            monthlyPicker.dispatchEvent(new Event('change'));
-            setWeekPickers(new Date()); // Esto establece y calcula la semana actual
-        }
+        
 
         // Funciones de ayuda para el cálculo de semanas
         function getWeekNumber(d) {

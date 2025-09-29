@@ -1917,7 +1917,9 @@ const historyListContainer = document.getElementById('history-list-container');
             });
         }
 
+        // Botón "Agregar Producto" en la vista principal del POS
         addProductBtnPos.addEventListener('click', () => {
+            currentEditingProductId = null; // Aseguramos que estamos en modo "crear"
             productForm.reset();
             document.getElementById('product-modal-title').textContent = "Agregar Nuevo Producto";
             populateCategoryDropdown(document.getElementById('product-category'));
@@ -1927,14 +1929,26 @@ const historyListContainer = document.getElementById('history-list-container');
         closeProductModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
 
         // Llena el <select> de categorías en el modal de productos
-        function populateCategoryDropdown(selectElement) {
+        function populateCategoryDropdown(selectElement, selectedValue = null) {
             selectElement.innerHTML = '<option value="">-- Selecciona una categoría --</option>';
+            
             allCategories.forEach(cat => {
-                selectElement.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
+                const option = document.createElement('option');
+                option.value = cat.name;
+                option.textContent = cat.name;
+                
+                // --- ✨ LÓGICA AÑADIDA AQUÍ ✨ ---
+                // Si el nombre de esta categoría es igual al que queremos seleccionar,
+                // le decimos al navegador que esta es la opción por defecto.
+                if (cat.name === selectedValue) {
+                    option.selected = true;
+                }
+                
+                selectElement.appendChild(option);
             });
         }
 
-        // Formulario para guardar un nuevo producto
+        // Formulario para guardar (Crear O Actualizar) un producto
         productForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const productData = {
@@ -1950,14 +1964,25 @@ const historyListContainer = document.getElementById('history-list-container');
             }
 
             try {
-                await addDoc(collection(db, "products"), productData);
-                alert("Producto agregado con éxito.");
+                // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
+                // Si estamos editando (currentEditingProductId tiene un ID), actualizamos.
+                if (currentEditingProductId) {
+                    await updateDoc(doc(db, "products", currentEditingProductId), productData);
+                    alert("Producto actualizado con éxito.");
+                } else {
+                    // Si no, creamos un producto nuevo.
+                    await addDoc(collection(db, "products"), productData);
+                    alert("Producto agregado con éxito.");
+                }
+                // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
+
                 productModal.classList.add('hidden');
             } catch (error) {
                 console.error("Error al guardar producto:", error);
                 alert("No se pudo guardar el producto.");
             }
         });
+      
       
         // ======== ▼▼ NUEVA FUNCIÓN PARA LLENAR EL FILTRO ▼▼ ========
         function populateInventoryFilterDropdown() {
@@ -5042,31 +5067,54 @@ function renderProductManagementList() {
     });
 }
 
-// Listener para manejar las acciones de Editar, Guardar y Eliminar
-productManagementList.addEventListener('click', async (e) => {
-    const productItem = e.target.closest('[data-doc-id]');
-    if (!productItem) return;
+// Listener para manejar las acciones de Editar y Eliminar en el modal "Administrar Productos"
+        productManagementList.addEventListener('click', async (e) => {
+            const productItem = e.target.closest('[data-doc-id]');
+            if (!productItem) return;
 
-    const docId = productItem.dataset.docId;
-    const editBtn = e.target.closest('.edit-product-btn');
-    const deleteBtn = e.target.closest('.delete-product-btn');
-    const saveBtn = e.target.closest('.save-product-btn');
+            const docId = productItem.dataset.docId;
+            const editBtn = e.target.closest('.edit-product-btn');
+            const deleteBtn = e.target.closest('.delete-product-btn');
 
-    // Lógica para EDITAR
-    if (editBtn) {
-        const nameSpan = productItem.querySelector('.product-name-text');
-        const currentName = nameSpan.textContent;
-        const flexContainer = productItem.querySelector('.flex-grow');
-        flexContainer.innerHTML = `<input type="text" class="border border-gray-300 rounded-md py-1 px-2 w-full product-name-input" value="${currentName}">`;
-        
-        editBtn.innerHTML = '<i class="fas fa-save"></i>';
-        editBtn.classList.remove('edit-product-btn', 'text-blue-500');
-        editBtn.classList.add('save-product-btn', 'text-green-500');
-        editBtn.title = "Guardar Nombre";
-        productItem.querySelector('.product-name-input').focus();
-    }
+            // --- Lógica para EDITAR (versión mejorada) ---
+            // Ahora abre el modal de formulario completo
+            if (editBtn) {
+                currentEditingProductId = docId; // Guardamos el ID del producto que estamos editando
+                const product = allProducts.find(p => p.id === docId);
 
-    // Lógica para GUARDAR
+                if (product) {
+                    // 1. Llenamos el formulario con los datos existentes del producto
+                    document.getElementById('product-modal-title').textContent = "Editar Producto";
+                    populateCategoryDropdown(document.getElementById('product-category'), product.categoryName);
+                    document.getElementById('product-name').value = product.name;
+                    document.getElementById('product-stock').value = product.stock;
+                    document.getElementById('product-price').value = product.price;
+                    
+                    // 2. Cerramos el modal de "Administrar" y abrimos el de "Formulario"
+                    manageProductsModal.classList.add('hidden');
+                    productModal.classList.remove('hidden');
+                }
+            }
+          
+          
+            
+            // --- Lógica para ELIMINAR (sin cambios) ---
+            if (deleteBtn) {
+                const productName = productItem.querySelector('.product-name-text').textContent;
+                if (confirm(`¿Estás seguro de que quieres eliminar el producto "${productName}"?\nEsta acción no se puede deshacer.`)) {
+                    try {
+                        await deleteDoc(doc(db, "products", docId));
+                        alert("Producto eliminado con éxito.");
+                        // La lista se actualizará sola gracias al listener onSnapshot
+                    } catch (error) {
+                        console.error("Error al eliminar el producto:", error);
+                        alert("No se pudo eliminar el producto.");
+                    }
+                }
+            }
+        });
+
+      // Lógica para GUARDAR
     if (saveBtn) {
         const input = productItem.querySelector('.product-name-input');
         const newName = input.value.trim();
@@ -5081,22 +5129,9 @@ productManagementList.addEventListener('click', async (e) => {
             }
         }
     }
+    
 
-    // Lógica para ELIMINAR
-    if (deleteBtn) {
-        const productName = productItem.querySelector('.product-name-text').textContent;
-        if (confirm(`¿Estás seguro de que quieres eliminar el producto "${productName}"?\nEsta acción no se puede deshacer.`)) {
-            try {
-                await deleteDoc(doc(db, "products", docId));
-                alert("Producto eliminado con éxito.");
-                // La lista se actualizará sola
-            } catch (error) {
-                console.error("Error al eliminar el producto:", error);
-                alert("No se pudo eliminar el producto.");
-            }
-        }
-    }
-});
+    
       
       
       // --- LÓGICA PARA VERIFICACIÓN Y ENVÍO DE NOTIFICACIONES DE CUMPLEAÑOS ---

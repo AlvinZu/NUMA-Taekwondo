@@ -2112,67 +2112,69 @@ const historyListContainer = document.getElementById('history-list-container');
         cancelPaymentBtn.addEventListener('click', closePaymentModal);
 
         confirmPaymentBtn.addEventListener('click', async () => {
-            // --- ✨ INICIO DE LA MODIFICACIÓN ✨ ---
-            // 1. Abrimos la ventana emergente INMEDIATAMENTE. Estará en blanco por ahora.
             const printWindow = window.open('', 'Recibo', 'height=500,width=300');
             if (!printWindow) {
                 alert("Por favor, permite las ventanas emergentes para este sitio para poder imprimir recibos.");
                 return;
             }
-            printWindow.document.write('<html><body><p>Procesando pago, por favor espera...</p></body></html>');
-            // --- ✨ FIN DE LA MODIFICACIÓN ✨ ---
-
-            const studentDocRef = doc(db, "students", currentScannedStudentId);
-            const studentDocSnap = await getDoc(studentDocRef);
-            if (!studentDocSnap.exists()) {
-                alert("Error: No se encontró al alumno.");
-                printWindow.close(); // Cerramos la ventana si hay un error
-                return;
-            }
-            
-            const student = studentDocSnap.data();
-            const newClass = changeClassSelect.value;
-            const paymentMethod = paymentMethodSelect.value;
-            const renewalDateValue = renewalDateInput.value;
-            const paymentAmount = parseFloat(renewalAmountInput.value);
-            
-            if (!renewalDateValue || !paymentAmount) {
-                alert("Por favor, completa todos los campos requeridos.");
-                printWindow.close(); // Cerramos la ventana si hay un error
-                return;
-            }
-
-            const dateParts = renewalDateValue.split('-');
-            const newExpirationDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-            newExpirationDate.setDate(newExpirationDate.getDate() + 30);
+            printWindow.document.write('<html><body><p>Procesando pago...</p></body></html>');
             
             try {
+                const studentDocRef = doc(db, "students", currentScannedStudentId);
+                const studentDocSnap = await getDoc(studentDocRef);
+                if (!studentDocSnap.exists()) throw new Error("No se encontró al alumno.");
+                
+                const student = studentDocSnap.data();
+                const paymentAmount = parseFloat(renewalAmountInput.value);
+                const paymentDate = new Date(renewalDateInput.value + 'T00:00:00');
+
+                // --- ✨ INICIO DE LA NUEVA LÓGICA DE CÁLCULO ✨ ---
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Hoy a medianoche
+
+                const currentExpirationDate = student.fechaVencimiento.toDate();
+                let baseDateForNewExpiration;
+
+                // Si la fecha de vencimiento actual es en el futuro, usamos esa como base.
+                if (currentExpirationDate > today) {
+                    baseDateForNewExpiration = currentExpirationDate;
+                } else {
+                    // Si ya venció, usamos la fecha del pago como base.
+                    baseDateForNewExpiration = paymentDate;
+                }
+
+                const newExpirationDate = new Date(baseDateForNewExpiration);
+                newExpirationDate.setDate(newExpirationDate.getDate() + 30);
+                // --- ✨ FIN DE LA NUEVA LÓGICA DE CÁLCULO ✨ ---
+
+                if (!renewalDateInput.value || !paymentAmount) {
+                    throw new Error("Por favor, completa todos los campos requeridos.");
+                }
+
                 await updateDoc(studentDocRef, {
-                    clase: newClass,
-                    fechaVencimiento: newExpirationDate,
+                    clase: changeClassSelect.value,
+                    fechaVencimiento: newExpirationDate, // Usamos la nueva fecha calculada
                     ultimoMontoPagado: paymentAmount,
-                    ultimoMetodoPago: paymentMethod
+                    ultimoMetodoPago: paymentMethodSelect.value
                 });
 
                 const paymentsCollectionRef = collection(db, "students", currentScannedStudentId, "pagos");
                 await addDoc(paymentsCollectionRef, {
                     fechaPago: new Date(),
                     monto: paymentAmount,
-                    metodo: paymentMethod,
+                    metodo: paymentMethodSelect.value,
                     tipo: 'Mensualidad',
                     nuevaFechaVencimiento: newExpirationDate
                 });
                 
-                if (confirm(`Pago registrado para ${student.name}.\n\n¿Deseas imprimir un recibo?`)) {
+                if (confirm(`Pago registrado para ${student.name}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.\n\n¿Deseas imprimir un recibo?`)) {
                     const receiptData = {
                         clientName: student.name,
                         total: paymentAmount,
-                        concept: 'Pago de Mensualualidad'
+                        concept: 'Pago de Mensualidad'
                     };
-                    // 2. En lugar de crear una nueva ventana, usamos la que ya abrimos.
-                    printReceipt(receiptData, printWindow); 
+                    printReceipt(receiptData, printWindow);
                 } else {
-                    // 3. Si el usuario no quiere imprimir, simplemente cerramos la ventana vacía.
                     printWindow.close();
                 }
                 
@@ -2181,8 +2183,8 @@ const historyListContainer = document.getElementById('history-list-container');
 
             } catch (error) {
                 console.error("Error al actualizar el pago:", error);
-                alert("Hubo un error al registrar el pago.");
-                printWindow.close(); // Cerramos la ventana si hay un error
+                alert("Hubo un error al registrar el pago: " + error.message);
+                printWindow.close();
             }
         });
       

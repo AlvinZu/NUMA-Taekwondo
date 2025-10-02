@@ -1201,6 +1201,8 @@
         let currentEditingExpenseId = null;
         let cart = []; // Carrito de la venta actual
         let currentEditingVideoId = null;
+        const ACCESS_RESULT_TIMEOUT = 4000; // Tiempo en milisegundos (4 segundos)
+        let accessResultTimer = null; // Para guardar el temporizador
 
         const successSound = new Audio('Acceso_Concedido.mp3');
         const errorSound = new Audio('Acceso_Denegado.mp3');
@@ -1593,6 +1595,11 @@ const historyListContainer = document.getElementById('history-list-container');
             }
             
             accessResultView.classList.remove('hidden');
+            // Limpiamos cualquier temporizador anterior y creamos uno nuevo
+            clearTimeout(accessResultTimer);
+            accessResultTimer = setTimeout(() => {
+                resetToScannerView();
+            }, ACCESS_RESULT_TIMEOUT);
         }
 
         function startScanner() {
@@ -1648,11 +1655,21 @@ const historyListContainer = document.getElementById('history-list-container');
 
         function resetToScannerView() {
             stopScanner();
+       // Limpiamos el temporizador por si se llama a esta función desde otro lugar
+            if (accessResultTimer) {
+                clearTimeout(accessResultTimer);
+            }
             accessResultView.classList.add('hidden');
             cameraView.classList.add('hidden');
             scannerMainView.classList.remove('hidden');
+            accessInput.focus(); // Ponemos el foco en el input para el siguiente alumno
         }
-        backToScannerBtn.addEventListener('click', resetToScannerView);
+        backToScannerBtn.addEventListener('click', () => {
+            // --- ✨ MODIFICACIÓN ✨ ---
+            // No necesitamos el temporizador si el usuario hace clic manualmente
+            clearTimeout(accessResultTimer); 
+            resetToScannerView();
+        });
 
         const allViews = document.querySelectorAll('#main-content > div');
         const navItems = document.querySelectorAll('.nav-item');
@@ -2207,6 +2224,24 @@ const historyListContainer = document.getElementById('history-list-container');
             }
         });
       
+      // --- FUNCIÓN REUTILIZABLE PARA ABRIR EL MODAL DE PAGO ---
+        async function openPaymentModalForStudent(studentId) {
+            const studentDocRef = doc(db, "students", studentId);
+            const studentDocSnap = await getDoc(studentDocRef);
+
+            if (studentDocSnap.exists()) {
+                currentScannedStudentId = studentId; // Asignamos el ID del alumno que estamos procesando
+                const student = studentDocSnap.data();
+                paymentStudentName.textContent = student.name;
+                renewalAmountInput.value = student.ultimoMontoPagado || 600;
+                populateClassDropdowns(changeClassSelect, student.clase);
+                renewalDateInput.value = new Date().toISOString().split('T')[0];
+                paymentModal.classList.remove('hidden');
+            } else {
+                alert("Error: No se encontró al alumno para renovar el pago.");
+            }
+        }
+      
       
     // --- Lógica de Gestión de Ejercicios ---
     function listenForExerciseChanges() {
@@ -2729,39 +2764,48 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
         }
 
         studentTableBody.addEventListener('click', async function(e) {
-    const viewButton = e.target.closest('.student-row');
-    const deleteButton = e.target.closest('.delete-student-row-btn');
+            // Buscamos cuál de los tres botones específicos se presionó
+            const renewButton = e.target.closest('.renew-payment-row-btn');
+            const deleteButton = e.target.closest('.delete-student-row-btn');
+            const viewButton = e.target.closest('.view-student-row-btn');
 
-    if (deleteButton) {
-        e.stopPropagation(); // Evita que se abra el modal de ver info
-        const studentId = deleteButton.getAttribute('data-id');
-        const studentName = deleteButton.closest('tr').querySelector('.font-medium').textContent;
+            // --- LÓGICA CORREGIDA Y REORDENADA ---
+            // Le damos prioridad a los botones de acción específicos
 
-        if (confirm(`¿Estás seguro de que quieres eliminar a "${studentName}"?\n\nEsta acción no se puede deshacer.`)) {
-            try {
-                // Paso 1: Eliminar el historial de pagos en la subcolección
-                const paymentsRef = collection(db, "students", studentId, "pagos");
-                const paymentsSnapshot = await getDocs(paymentsRef);
-                const deletePromises = [];
-                paymentsSnapshot.forEach((doc) => {
-                    deletePromises.push(deleteDoc(doc.ref));
-                });
-                await Promise.all(deletePromises);
+            if (renewButton) {
+                // 1. Si se hizo clic en RENOVAR
+                e.stopPropagation(); // Evita que se activen otros clics
+                const studentId = renewButton.dataset.id;
+                openPaymentModalForStudent(studentId);
 
-                // Paso 2: Eliminar el documento principal del alumno
-                await deleteDoc(doc(db, "students", studentId));
+            } else if (deleteButton) {
+                // 2. Si se hizo clic en ELIMINAR
+                e.stopPropagation(); 
+                const studentId = deleteButton.dataset.id;
+                const studentName = deleteButton.closest('tr').querySelector('.font-medium').textContent;
 
-                alert(`Alumno "${studentName}" eliminado con éxito.`);
-            } catch (error) {
-                console.error("Error al eliminar alumno:", error);
-                alert("Hubo un error al intentar eliminar al alumno.");
+                if (confirm(`¿Estás seguro de que quieres eliminar a "${studentName}"?\n\nEsta acción no se puede deshacer.`)) {
+                    try {
+                        const paymentsRef = collection(db, "students", studentId, "pagos");
+                        const paymentsSnapshot = await getDocs(paymentsRef);
+                        const deletePromises = [];
+                        paymentsSnapshot.forEach((doc) => {
+                            deletePromises.push(deleteDoc(doc.ref));
+                        });
+                        await Promise.all(deletePromises);
+                        await deleteDoc(doc(db, "students", studentId));
+                        alert(`Alumno "${studentName}" eliminado con éxito.`);
+                    } catch (error) {
+                        console.error("Error al eliminar alumno:", error);
+                        alert("Hubo un error al intentar eliminar al alumno.");
+                    }
+                }
+            } else if (viewButton) {
+                // 3. Si se hizo clic en VER DETALLES
+                const studentId = viewButton.dataset.id;
+                openViewModal(studentId);
             }
-        }
-    } else if (viewButton) {
-        const studentId = viewButton.getAttribute('data-id');
-        openViewModal(studentId);
-    }
-});
+        });
 
         closeViewStudentModalBtn.addEventListener('click', () => viewStudentModal.classList.add('hidden'));
 
@@ -2936,10 +2980,10 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
       
         function renderStudentTable(studentsToRender) {
             const studentTableBody = document.getElementById('student-table-body');
-            studentTableBody.innerHTML = ''; // Limpiar la tabla antes de dibujar
+            studentTableBody.innerHTML = ''; 
 
             studentsToRender.forEach((student) => {
-                const studentName = student.name || student.nombre;
+                const studentName = student.name || 'N/A';
                 if (!studentName) return;
 
                 const expirationDate = student.fechaVencimiento.toDate();
@@ -2947,11 +2991,8 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                 today.setHours(0, 0, 0, 0);
                 const isExpired = expirationDate < today;
 
-                const avatarColor = student.rol === 'admin' ? 'bg-blue-500' : 'bg-gray-400';
-                const initials = studentName.substring(0, 2).toUpperCase();
-
                 const newRow = document.createElement('tr');
-                newRow.className = 'student-row hover:bg-gray-50';
+                newRow.className = 'student-row'; // La clase se mantiene pero ya no se usará para el clic principal
                 newRow.setAttribute('data-id', student.id);
                 
                 const beltName = student.cinta || 'N/A';
@@ -2961,9 +3002,6 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-semibold">${student.numericId || 'N/A'}</td>
                     <td class="px-4 py-3 whitespace-nowrap">
                         <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">
-                                ${initials}
-                            </div>
                             <span class="text-sm font-medium text-gray-900">${studentName}</span>
                         </div>
                     </td>
@@ -2975,12 +3013,13 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isExpired ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
-                            ${isExpired ? 'Vencida' : 'Activa'}
+                            ${isExpired ? 'Vencido' : 'Activo'}
                         </span>
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-3">
-                        <button class="text-red-600 hover:text-red-900 edit-student-row-btn" data-id="${student.id}"><i class="fas fa-edit"></i></button>
-                        <button class="text-gray-600 hover:text-gray-900 delete-student-row-btn" data-id="${student.id}"><i class="fas fa-trash"></i></button>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-4">
+                        <button class="text-gray-600 hover:text-blue-600 view-student-row-btn" data-id="${student.id}" title="Ver Detalles"><i class="fas fa-eye"></i></button>
+                        <button class="text-gray-600 hover:text-green-600 renew-payment-row-btn" data-id="${student.id}" title="Renovar Mensualidad"><i class="fas fa-dollar-sign"></i></button>
+                        <button class="text-gray-600 hover:text-red-600 delete-student-row-btn" data-id="${student.id}" title="Eliminar Alumno"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 studentTableBody.appendChild(newRow);

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es"> 
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#ef4444"> 
@@ -3619,18 +3619,16 @@ closeExerciseDetailModalBtn.addEventListener('click', () => {
             const totalStudents = allStudents.filter(s => s.rol === 'student').length;
             document.getElementById('report-total-students').textContent = totalStudents;
 
-            const { active, expired } = countStudentStatus();
+            // --- ✨ CORRECCIÓN APLICADA AQUÍ ✨ ---
+            // Nos aseguramos de llamar a la función que cuenta ALUMNOS, no pagos.
             const newStudents = countNewStudentsThisMonth();
             document.getElementById('report-new-students').textContent = newStudents;
-
-            // Los ingresos ahora se calculan dinámicamente, ya no aquí.
-
-            // 3. Generar los gráficos
+            
+            // El resto de la función no cambia
+            const { active, expired } = countStudentStatus();
             createStatusChart(active, expired);
             createBeltChart();
             createClassChart();
-          
-            // 4. Renderizar la lista de promoción
             renderPromotionList();
         }
       
@@ -3750,11 +3748,26 @@ async function generatePaymentsReport() {
             const currentMonth = today.getMonth();
             const currentYear = today.getFullYear();
             
-            return allStudents.filter(student => {
+            // Filtramos la lista de TODOS los alumnos
+            const newStudentsThisMonth = allStudents.filter(student => {
                 if (!student.fechaIngreso) return false;
-                const joinDate = new Date(student.fechaIngreso);
+                
+                // Leemos la fecha de ingreso de forma segura para evitar errores de zona horaria
+                const dateParts = student.fechaIngreso.split('-');
+                if (dateParts.length !== 3) return false;
+                
+                const year = parseInt(dateParts[0]);
+                const month = parseInt(dateParts[1]) - 1; // El mes en JavaScript es 0-11
+                const day = parseInt(dateParts[2]);
+
+                const joinDate = new Date(year, month, day);
+                
+                // Devolvemos 'true' solo si el mes y el año coinciden
                 return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
-            }).length;
+            });
+
+            // Devolvemos la cantidad de alumnos que pasaron el filtro
+            return newStudentsThisMonth.length;
         }
 
         // Función para calcular los ingresos del mes actual

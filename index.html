@@ -2154,88 +2154,82 @@ const historyListContainer = document.getElementById('history-list-container');
         });
 
         function closePaymentModal() {
-            paymentModal.classList.add('hidden');
+    paymentModal.classList.add('hidden');
+}
+
+closePaymentModalBtn.addEventListener('click', closePaymentModal);
+cancelPaymentBtn.addEventListener('click', closePaymentModal);
+
+confirmPaymentBtn.addEventListener('click', async () => {
+    // Ya no abrimos la ventana aquí, lo hará la función printReceipt
+
+    try {
+        const studentDocRef = doc(db, "students", currentScannedStudentId);
+        const studentDocSnap = await getDoc(studentDocRef);
+        if (!studentDocSnap.exists()) throw new Error("No se encontró al alumno.");
+
+        const student = studentDocSnap.data();
+        const paymentAmount = parseFloat(renewalAmountInput.value);
+        const paymentDate = new Date(renewalDateInput.value + 'T00:00:00');
+
+        // --- ✨ INICIO DE LA NUEVA LÓGICA DE CÁLCULO ✨ ---
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Hoy a medianoche
+
+        const currentExpirationDate = student.fechaVencimiento.toDate();
+        let baseDateForNewExpiration;
+
+        // Si la fecha de vencimiento actual es en el futuro, usamos esa como base.
+        if (currentExpirationDate > today) {
+            baseDateForNewExpiration = currentExpirationDate;
+        } else {
+            // Si ya venció, usamos la fecha del pago como base.
+            baseDateForNewExpiration = paymentDate;
         }
 
-        closePaymentModalBtn.addEventListener('click', closePaymentModal);
-        cancelPaymentBtn.addEventListener('click', closePaymentModal);
+        const newExpirationDate = new Date(baseDateForNewExpiration);
+        newExpirationDate.setDate(newExpirationDate.getDate() + 30);
+        // --- ✨ FIN DE LA NUEVA LÓGICA DE CÁLCULO ✨ ---
 
-        confirmPaymentBtn.addEventListener('click', async () => {
-            const printWindow = window.open('', 'Recibo', 'height=500,width=300');
-            if (!printWindow) {
-                alert("Por favor, permite las ventanas emergentes para este sitio para poder imprimir recibos.");
-                return;
-            }
-            printWindow.document.write('<html><body><p>Procesando pago...</p></body></html>');
-            
-            try {
-                const studentDocRef = doc(db, "students", currentScannedStudentId);
-                const studentDocSnap = await getDoc(studentDocRef);
-                if (!studentDocSnap.exists()) throw new Error("No se encontró al alumno.");
-                
-                const student = studentDocSnap.data();
-                const paymentAmount = parseFloat(renewalAmountInput.value);
-                const paymentDate = new Date(renewalDateInput.value + 'T00:00:00');
+        if (!renewalDateInput.value || !paymentAmount) {
+            throw new Error("Por favor, completa todos los campos requeridos.");
+        }
 
-                // --- ✨ INICIO DE LA NUEVA LÓGICA DE CÁLCULO ✨ ---
-                const today = new Date();
-                today.setHours(0, 0, 0, 0); // Hoy a medianoche
-
-                const currentExpirationDate = student.fechaVencimiento.toDate();
-                let baseDateForNewExpiration;
-
-                // Si la fecha de vencimiento actual es en el futuro, usamos esa como base.
-                if (currentExpirationDate > today) {
-                    baseDateForNewExpiration = currentExpirationDate;
-                } else {
-                    // Si ya venció, usamos la fecha del pago como base.
-                    baseDateForNewExpiration = paymentDate;
-                }
-
-                const newExpirationDate = new Date(baseDateForNewExpiration);
-                newExpirationDate.setDate(newExpirationDate.getDate() + 30);
-                // --- ✨ FIN DE LA NUEVA LÓGICA DE CÁLCULO ✨ ---
-
-                if (!renewalDateInput.value || !paymentAmount) {
-                    throw new Error("Por favor, completa todos los campos requeridos.");
-                }
-
-                await updateDoc(studentDocRef, {
-                    clase: changeClassSelect.value,
-                    fechaVencimiento: newExpirationDate, // Usamos la nueva fecha calculada
-                    ultimoMontoPagado: paymentAmount,
-                    ultimoMetodoPago: paymentMethodSelect.value
-                });
-
-                const paymentsCollectionRef = collection(db, "students", currentScannedStudentId, "pagos");
-                await addDoc(paymentsCollectionRef, {
-                    fechaPago: new Date(),
-                    monto: paymentAmount,
-                    metodo: paymentMethodSelect.value,
-                    tipo: 'Mensualidad',
-                    nuevaFechaVencimiento: newExpirationDate
-                });
-                
-                if (confirm(`Pago registrado para ${student.name}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.\n\n¿Deseas imprimir un recibo?`)) {
-                    const receiptData = {
-                        clientName: student.name,
-                        total: paymentAmount,
-                        concept: 'Pago de Mensualidad'
-                    };
-                    printReceipt(receiptData, printWindow);
-                } else {
-                    printWindow.close();
-                }
-                
-                closePaymentModal();
-                resetToScannerView();
-
-            } catch (error) {
-                console.error("Error al actualizar el pago:", error);
-                alert("Hubo un error al registrar el pago: " + error.message);
-                printWindow.close();
-            }
+        await updateDoc(studentDocRef, {
+            clase: changeClassSelect.value,
+            fechaVencimiento: newExpirationDate, // Usamos la nueva fecha calculada
+            ultimoMontoPagado: paymentAmount,
+            ultimoMetodoPago: paymentMethodSelect.value
         });
+
+        const paymentsCollectionRef = collection(db, "students", currentScannedStudentId, "pagos");
+        await addDoc(paymentsCollectionRef, {
+            fechaPago: new Date(),
+            monto: paymentAmount,
+            metodo: paymentMethodSelect.value,
+            tipo: 'Mensualidad',
+            nuevaFechaVencimiento: newExpirationDate
+        });
+
+        if (confirm(`Pago registrado para ${student.name}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.\n\n¿Deseas imprimir un recibo?`)) {
+            const receiptData = {
+                clientName: student.name,
+                total: paymentAmount,
+                concept: 'Pago de Mensualidad',
+                nextDueDate: newExpirationDate // <--- ¡AQUÍ ESTÁ LA CLAVE! Enviamos la nueva fecha
+            };
+            // Llamamos a imprimir sin pasar ninguna ventana, la función crea la suya propia
+            printReceipt(receiptData);
+        }
+
+        closePaymentModal();
+        resetToScannerView();
+
+    } catch (error) {
+        console.error("Error al actualizar el pago:", error);
+        alert("Hubo un error al registrar el pago: " + error.message);
+    }
+});
       
       // --- FUNCIÓN REUTILIZABLE PARA ABRIR EL MODAL DE PAGO ---
         async function openPaymentModalForStudent(studentId) {
@@ -2639,15 +2633,18 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                     const payment = doc.data();
                     const paymentDate = payment.fechaPago.toDate();
                     
-                    const paymentElement = document.createElement('div');
-                    paymentElement.className = 'flex justify-between items-center p-2 border-b text-sm';
-                    // Convertimos los datos a un string JSON para guardarlos en el botón
-                    const paymentDataString = JSON.stringify({
-                        date: paymentDate.toISOString(),
-                        amount: payment.monto,
-                        method: payment.metodo,
-                        type: payment.tipo || 'Mensualidad'
-                    });
+            // --- MODIFICACIÓN AQUÍ ---
+            // Intentamos obtener la fecha de vencimiento guardada en el pago histórico
+            // Si es un pago viejo que no tiene ese dato, enviamos null
+            const expirationDate = payment.nuevaFechaVencimiento ? payment.nuevaFechaVencimiento.toDate().toISOString() : null;
+
+            const paymentDataString = JSON.stringify({
+                date: paymentDate.toISOString(),
+                amount: payment.monto,
+                method: payment.metodo,
+                type: payment.tipo || 'Mensualidad',
+                nextDueDate: expirationDate // <--- AGREGAMOS ESTO AL JSON DEL BOTÓN
+            });
 
                     paymentElement.innerHTML = `
                         <div>
@@ -2675,7 +2672,8 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
         const receiptData = {
             clientName: studentName,
             total: paymentData.amount,
-            concept: paymentData.type
+            concept: paymentData.type,
+            nextDueDate: paymentData.nextDueDate // <--- PASAMOS EL DATO
         };
         printReceipt(receiptData);
     }
@@ -5549,12 +5547,29 @@ function printReceipt(receiptData) {
             `;
         });
     } else {
-        // Para pagos de mensualidad que no tienen "items"
+        // Para pagos de mensualidad
         itemsHtml = `
             <tr>
                 <td>${receiptData.concept}</td>
                 <td style="text-align: right;">$${receiptData.total.toFixed(2)}</td>
             </tr>
+        `;
+    }
+
+    // Lógica para formatear la fecha de vencimiento si existe
+    let expirationHtml = '';
+    if (receiptData.nextDueDate) {
+        // Convertimos a objeto Date si viene como string
+        const dateObj = new Date(receiptData.nextDueDate);
+        // Ajustamos la visualización (sumando horas si es necesario por zona horaria o usando UTC)
+        // Usaremos toLocaleDateString simple para evitar confusiones
+        const dateStr = dateObj.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+        
+        expirationHtml = `
+            <p style="margin-top: 5px; border-top: 1px dotted #ccc; padding-top: 5px;">
+                <strong>Vence / Próximo Pago:</strong><br>
+                <span style="font-size: 16px;">${dateStr}</span>
+            </p>
         `;
     }
 
@@ -5581,12 +5596,12 @@ function printReceipt(receiptData) {
         <body>
             <div class="header">
                 <h3>Escuela de Taekwondo Numa</h3>
-                <p>Gracias por su preferencia</p>
+                <p>Comprobante de Pago</p>
             </div>
             <div class="info">
-                <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-MX')}</p>
+                <p><strong>Fecha Pago:</strong> ${new Date().toLocaleString('es-MX')}</p>
                 <p><strong>Alumno:</strong> ${receiptData.clientName}</p>
-            </div>
+                ${expirationHtml} </div>
             <hr>
             <table>
                 ${itemsHtml}
@@ -5594,23 +5609,26 @@ function printReceipt(receiptData) {
             <hr>
             <table class="total">
                 <tr>
-                    <td>TOTAL:</td>
+                    <td>TOTAL PAGADO:</td>
                     <td style="text-align: right;">$${receiptData.total.toFixed(2)}</td>
                 </tr>
             </table>
             <p style="text-align: center; margin-top: 10px;">¡Gracias por su preferencia!</p>
-            <p style="text-align: center; margin-top: 10px;">Vuelva pronto</p>
         </body>
         </html>
     `;
 
-    // 2. Abrir una nueva ventana, escribir el HTML e invocar la impresión
-    const printWindow = window.open('', '', 'height=500,width=300');
+    // 2. Abrir ventana e imprimir
+    const printWindow = window.open('', '', 'height=600,width=350');
     printWindow.document.write(receiptHtml);
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    
+    // Pequeño retardo para asegurar que carguen los estilos antes de imprimir
+    setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    }, 250);
 }
       
       

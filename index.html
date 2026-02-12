@@ -2646,6 +2646,9 @@ viewPaymentHistoryBtn.addEventListener('click', async () => {
                 nextDueDate: expirationDate // <--- AGREGAMOS ESTO AL JSON DEL BOTÓN
             });
 
+            const paymentElement = document.createElement('div');
+            paymentElement.className = 'flex justify-between items-center p-2 border rounded-md bg-gray-50';
+
                     paymentElement.innerHTML = `
                         <div>
                             <p><strong>${payment.tipo || 'Pago'}:</strong> $${payment.monto.toFixed(2)}</p>

@@ -2188,7 +2188,7 @@ confirmPaymentBtn.addEventListener('click', async () => {
         }
 
         const newExpirationDate = new Date(baseDateForNewExpiration);
-        newExpirationDate.setDate(newExpirationDate.getDate() + 30);
+        newExpirationDate.setMonth(newExpirationDate.getMonth() + 1);
         // --- ✨ FIN DE LA NUEVA LÓGICA DE CÁLCULO ✨ ---
 
         if (!renewalDateInput.value || !paymentAmount) {

@@ -2225,6 +2225,11 @@ confirmPaymentBtn.addEventListener('click', async () => {
 
         closePaymentModal();
         resetToScannerView();
+      
+      // Si estamos viendo la información de este mismo alumno, actualizamos la vista
+        if (!document.getElementById('view-student-modal').classList.contains('hidden') && currentViewedStudentId === currentScannedStudentId) {
+            openViewModal(currentScannedStudentId);
+        }
 
     } catch (error) {
         console.error("Error al actualizar el pago:", error);

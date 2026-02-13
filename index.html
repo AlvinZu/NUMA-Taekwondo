@@ -2161,8 +2161,6 @@ closePaymentModalBtn.addEventListener('click', closePaymentModal);
 cancelPaymentBtn.addEventListener('click', closePaymentModal);
 
 confirmPaymentBtn.addEventListener('click', async () => {
-    // Ya no abrimos la ventana aquí, lo hará la función printReceipt
-
     try {
         const studentDocRef = doc(db, "students", currentScannedStudentId);
         const studentDocSnap = await getDoc(studentDocRef);
@@ -2170,55 +2168,58 @@ confirmPaymentBtn.addEventListener('click', async () => {
 
         const student = studentDocSnap.data();
         const paymentAmount = parseFloat(renewalAmountInput.value);
-        const paymentDate = new Date(renewalDateInput.value + 'T00:00:00');
+        
+        // --- 1. LÓGICA DE FECHA SEGURA (CORREGIDO) ---
+        // Obtenemos los componentes de la fecha directamente del input para evitar líos de zona horaria
+        // El input viene como "YYYY-MM-DD"
+        const dateParts = renewalDateInput.value.split('-'); 
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1; // En JS los meses van de 0 a 11
+        const day = parseInt(dateParts[2]);
 
-        // --- ✨ INICIO DE LA NUEVA LÓGICA DE CÁLCULO ✨ ---
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Hoy a medianoche
+        // Creamos la fecha base (Fecha de Pago) usando hora 12:00PM para evitar saltos de día por cambios de horario
+        const paymentDate = new Date(year, month, day, 12, 0, 0);
 
-        const currentExpirationDate = student.fechaVencimiento.toDate();
-        let baseDateForNewExpiration;
-
-        // Si la fecha de vencimiento actual es en el futuro, usamos esa como base.
-        if (currentExpirationDate > today) {
-            baseDateForNewExpiration = currentExpirationDate;
-        } else {
-            // Si ya venció, usamos la fecha del pago como base.
-            baseDateForNewExpiration = paymentDate;
-        }
-
-        const newExpirationDate = new Date(baseDateForNewExpiration);
+        // Creamos la fecha de vencimiento clonando la de pago y sumando 1 mes
+        const newExpirationDate = new Date(year, month, day, 12, 0, 0);
         newExpirationDate.setMonth(newExpirationDate.getMonth() + 1);
-        // --- ✨ FIN DE LA NUEVA LÓGICA DE CÁLCULO ✨ ---
+
+        // Ajuste para meses cortos (ej: 31 Enero + 1 mes no debe saltar a Marzo)
+        // Si el día cambió (ej: era 31 y ahora es 2 o 3), lo regresamos al último día del mes correcto.
+        if (newExpirationDate.getDate() !== day) {
+            newExpirationDate.setDate(0);
+        }
+        // -----------------------------------------------------------------------
 
         if (!renewalDateInput.value || !paymentAmount) {
             throw new Error("Por favor, completa todos los campos requeridos.");
         }
 
+        // Guardamos en Firestore
         await updateDoc(studentDocRef, {
             clase: changeClassSelect.value,
-            fechaVencimiento: newExpirationDate, // Usamos la nueva fecha calculada
+            fechaVencimiento: newExpirationDate, // Guardamos la fecha calculada estrictamente
             ultimoMontoPagado: paymentAmount,
             ultimoMetodoPago: paymentMethodSelect.value
         });
 
         const paymentsCollectionRef = collection(db, "students", currentScannedStudentId, "pagos");
         await addDoc(paymentsCollectionRef, {
-            fechaPago: new Date(),
+            fechaPago: paymentDate,
             monto: paymentAmount,
             metodo: paymentMethodSelect.value,
             tipo: 'Mensualidad',
             nuevaFechaVencimiento: newExpirationDate
         });
 
+        // Imprimimos el ticket
         if (confirm(`Pago registrado para ${student.name}.\nNueva fecha de vencimiento: ${formatCustomDate(newExpirationDate)}.\n\n¿Deseas imprimir un recibo?`)) {
             const receiptData = {
                 clientName: student.name,
                 total: paymentAmount,
                 concept: 'Pago de Mensualidad',
-                nextDueDate: newExpirationDate // <--- ¡AQUÍ ESTÁ LA CLAVE! Enviamos la nueva fecha
+                nextDueDate: newExpirationDate 
             };
-            // Llamamos a imprimir sin pasar ninguna ventana, la función crea la suya propia
             printReceipt(receiptData);
         }
 
